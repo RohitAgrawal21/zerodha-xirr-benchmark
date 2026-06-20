@@ -1,0 +1,42 @@
+{
+  "updated": "2026-06-20T21:56:02Z",
+  "updatedISO8601": "2026-06-20T21:56:02Z",
+  "indices": {
+    "nifty50": {
+      "status": "ok",
+      "source": "yfinance",
+      "latestDate": "2026-06-19",
+      "latestClose": 24013.1
+    },
+    "sensex": {
+      "status": "ok",
+      "source": "yfinance",
+      "latestDate": "2026-06-19",
+      "latestClose": 76802.9
+    },
+    "nifty500": {
+      "status": "ok",
+      "source": "yfinance",
+      "latestDate": "2026-06-19",
+      "latestClose": 23144.2
+    },
+    "nifty_midcap150": {
+      "status": "ok",
+      "source": "yfinance",
+      "latestDate": "2026-06-19",
+      "latestClose": 22972.95
+    },
+    "nifty_next50": {
+      "status": "ok",
+      "source": "yfinance",
+      "latestDate": "2026-06-19",
+      "latestClose": 781.04
+    },
+    "nifty_smallcap250": {
+      "status": "unavailable",
+      "source": "none",
+      "latestDate": null,
+      "latestClose": null
+    }
+  }
+}

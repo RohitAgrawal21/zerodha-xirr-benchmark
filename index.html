@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zerodha XIRR + Index Benchmark</title>
+<meta name="description" content="Compare your Zerodha portfolio XIRR against Indian index benchmarks. All data stays in your browser.">
+<meta property="og:title" content="Zerodha XIRR + Index Benchmark">
+<meta property="og:description" content="Paste your Zerodha equity ledger, see your real XIRR vs Nifty, Sensex, and more.">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#f8f9fa;--card:#fff;--border:#dee2e6;--text:#212529;--muted:#6c757d;
+--green:#198754;--red:#dc3545;--blue:#0d6efd;--blue-light:#cfe2ff;--orange:#fd7e14}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+background:var(--bg);color:var(--text);line-height:1.5;padding:1rem;max-width:960px;margin:0 auto}
+h1{font-size:1.5rem;margin-bottom:.25rem}
+.subtitle{color:var(--muted);font-size:.875rem;margin-bottom:1.5rem}
+.card{background:var(--card);border:1px solid var(--border);border-radius:.5rem;padding:1.25rem;margin-bottom:1rem}
+label{display:block;font-weight:600;margin-bottom:.25rem;font-size:.875rem}
+textarea{width:100%;min-height:120px;font-family:monospace;font-size:.8rem;padding:.5rem;
+border:1px solid var(--border);border-radius:.25rem;resize:vertical}
+input[type="number"]{width:100%;padding:.5rem;border:1px solid var(--border);border-radius:.25rem;font-size:1rem}
+button{padding:.5rem 1.25rem;border:none;border-radius:.25rem;cursor:pointer;font-size:.875rem;font-weight:600}
+.btn-primary{background:var(--blue);color:#fff}
+.btn-primary:hover{background:#0b5ed7}
+.btn-secondary{background:#e9ecef;color:var(--text)}
+.badge{display:inline-block;padding:.15rem .5rem;border-radius:1rem;font-size:.75rem;font-weight:600}
+.badge-ok{background:#d1e7dd;color:#0f5132}
+.badge-stale{background:#fff3cd;color:#664d03}
+.badge-unavailable{background:#e9ecef;color:var(--muted)}
+.freshness{font-size:.8rem;color:var(--muted);margin-bottom:1rem}
+.preview-table{width:100%;border-collapse:collapse;font-size:.8rem;margin-top:.75rem;margin-bottom:.75rem}
+.preview-table th,.preview-table td{padding:.35rem .5rem;border:1px solid var(--border);text-align:left}
+.preview-table th{background:#f1f3f5;font-weight:600}
+.deposit{color:var(--red)}
+.withdrawal{color:var(--green)}
+.positive{color:var(--green)}
+.results-grid{display:grid;gap:1rem;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+.result-card{background:var(--card);border:1px solid var(--border);border-radius:.5rem;padding:1rem}
+.result-card h3{font-size:.875rem;color:var(--muted);margin-bottom:.5rem}
+.xirr-value{font-size:1.75rem;font-weight:700}
+.bar-container{margin-top:.75rem}
+.bar-row{display:flex;align-items:center;gap:.5rem;margin-bottom:.25rem;font-size:.8rem}
+.bar-label{width:100px;text-align:right;flex-shrink:0}
+.bar-track{flex:1;height:20px;background:#f1f3f5;border-radius:3px;position:relative;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;transition:width .5s}
+.bar-value{font-size:.75rem;font-weight:600;width:60px;flex-shrink:0}
+.delta{font-size:.8rem;margin-top:.25rem;font-weight:600}
+.slider-row{display:flex;align-items:center;gap:.5rem;margin-bottom:.5rem;font-size:.8rem}
+.slider-row label{margin:0;width:110px;text-align:right;flex-shrink:0}
+.slider-row input[type="range"]{flex:1}
+.slider-row .weight-val{width:40px;text-align:right}
+.warning{background:#fff3cd;border:1px solid #ffecb5;border-radius:.25rem;padding:.75rem;
+font-size:.8rem;color:#664d03;margin-bottom:.75rem}
+.error{background:#f8d7da;border:1px solid #f5c2c7;border-radius:.25rem;padding:.75rem;
+font-size:.8rem;color:#842029;margin-bottom:.75rem}
+.hidden{display:none}
+.privacy-note{font-size:.75rem;color:var(--muted);text-align:center;margin-top:1.5rem;
+border-top:1px solid var(--border);padding-top:.75rem}
+@media(max-width:600px){
+  body{padding:.5rem}
+  .results-grid{grid-template-columns:1fr}
+  .xirr-value{font-size:1.4rem}
+}
+</style>
+</head>
+<body>
+
+<h1>Zerodha XIRR + Index Benchmark</h1>
+<p class="subtitle">Paste your equity ledger, enter your portfolio value, compare against Indian indices.</p>
+
+<div id="freshness" class="freshness"></div>
+
+<div class="card">
+  <label for="csv-input">Paste Zerodha Equity Ledger CSV</label>
+  <textarea id="csv-input" placeholder="Paste CSV from Zerodha Console → Reports → Ledger → Equity&#10;&#10;Example:&#10;particulars,posting_date,cost_center,voucher_type,debit,credit&#10;Funds added by ...,2020-01-15,,Bank Receipt,0,50000&#10;Net obligation ...,2020-01-16,,Journal Entry,1234.56,0"></textarea>
+</div>
+
+<div id="preview-section" class="card hidden">
+  <label>Cash Flow Classification Preview</label>
+  <p style="font-size:.8rem;color:var(--muted);margin-bottom:.5rem">Verify that deposits and withdrawals are classified correctly before computing XIRR.</p>
+  <table class="preview-table">
+    <thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Particulars</th></tr></thead>
+    <tbody id="preview-body"></tbody>
+  </table>
+  <div style="font-size:.8rem;color:var(--muted)" id="preview-summary"></div>
+</div>
+
+<div class="card">
+  <label for="account-value">Current Total Account Value (₹)</label>
+  <p style="font-size:.8rem;color:var(--muted);margin-bottom:.5rem">Holdings market value + idle cash balance as of today.</p>
+  <input type="number" id="account-value" placeholder="e.g. 750000" min="0" step="0.01">
+</div>
+
+<div style="display:flex;gap:.5rem;margin-bottom:1rem">
+  <button class="btn-primary" id="compute-btn" onclick="compute()">Compute XIRR</button>
+  <button class="btn-secondary" onclick="reset()">Clear</button>
+</div>
+
+<div id="warnings"></div>
+<div id="errors"></div>
+<div id="results" class="hidden">
+  <div class="card">
+    <h2 style="font-size:1.1rem;margin-bottom:.75rem">Your Portfolio</h2>
+    <div id="portfolio-xirr"></div>
+  </div>
+
+  <h2 style="font-size:1.1rem;margin-bottom:.75rem">Index Benchmarks</h2>
+  <div class="results-grid" id="benchmark-results"></div>
+
+  <div class="card" id="weighted-section">
+    <h2 style="font-size:1.1rem;margin-bottom:.75rem">Weighted Basket Benchmark</h2>
+    <p style="font-size:.8rem;color:var(--muted);margin-bottom:.75rem">Adjust weights to create a custom blended benchmark. Weights auto-normalize to 100%.</p>
+    <div id="weight-sliders"></div>
+    <div id="basket-result" style="margin-top:.75rem"></div>
+  </div>
+</div>
+
+<p class="privacy-note">
+  🔒 Your data never leaves this browser. All parsing, XIRR, and benchmark math run client-side in JavaScript.<br>
+  The only network call fetches pre-computed index JSON from this repo.
+</p>
+
+<script>
+"use strict";
+
+const META_URL = "data/meta.json";
+const DATA_URL_PREFIX = "data/";
+
+let indexMeta = null;
+let indexData = {};
+let cashFlows = [];
+let userXIRR = null;
+let benchmarkResults = {};
+
+// ─── CSV Parsing ───
+
+function parseCSV(text) {
+  const lines = text.trim().split(/\r?\n/);
+  if (lines.length < 2) return [];
+
+  const headerLine = lines[0];
+  const headers = parseCSVLine(headerLine).map(h => h.toLowerCase().trim());
+
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    const vals = parseCSVLine(lines[i]);
+    if (vals.length < headers.length) continue;
+    const row = {};
+    headers.forEach((h, j) => { row[h] = vals[j]; });
+    rows.push(row);
+  }
+  return rows;
+}
+
+function parseCSVLine(line) {
+  const result = [];
+  let current = "";
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (inQuotes) {
+      if (ch === '"' && line[i + 1] === '"') { current += '"'; i++; }
+      else if (ch === '"') { inQuotes = false; }
+      else { current += ch; }
+    } else {
+      if (ch === '"') { inQuotes = true; }
+      else if (ch === ',') { result.push(current.trim()); current = ""; }
+      else { current += ch; }
+    }
+  }
+  result.push(current.trim());
+  return result;
+}
+
+function parseDate(s) {
+  if (!s) return null;
+  s = s.trim();
+  // YYYY-MM-DD
+  let m = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return new Date(+m[1], +m[2] - 1, +m[3]);
+  // DD-Mon-YYYY (e.g., 15-Jan-2020)
+  m = s.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{4})/);
+  if (m) {
+    const months = {jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
+    const mon = months[m[2].toLowerCase()];
+    if (mon !== undefined) return new Date(+m[3], mon, +m[1]);
+  }
+  // DD-MM-YYYY
+  m = s.match(/^(\d{1,2})-(\d{1,2})-(\d{4})/);
+  if (m) return new Date(+m[3], +m[2] - 1, +m[1]);
+  // DD/MM/YYYY
+  m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+  if (m) return new Date(+m[3], +m[2] - 1, +m[1]);
+  return null;
+}
+
+function parseAmount(s) {
+  if (!s) return 0;
+  s = s.toString().replace(/,/g, "").replace(/"/g, "").trim();
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
+}
+
+function classifyCashFlows(rows) {
+  const flows = [];
+  for (const row of rows) {
+    const voucher = (row.voucher_type || row.vouchertype || row["voucher type"] || "").trim();
+    const particulars = (row.particulars || row.particular || "").trim();
+    const dateStr = row.posting_date || row.postingdate || row["posting date"] || row.date || "";
+    const dt = parseDate(dateStr);
+    if (!dt) continue;
+
+    const debit = parseAmount(row.debit);
+    const credit = parseAmount(row.credit);
+
+    if (voucher === "Bank Receipt" || voucher === "Bank Receipts") {
+      // Funds added → deposit → negative cash flow (money going IN to investment)
+      const amt = credit - debit;
+      if (amt > 0) flows.push({ date: dt, amount: -amt, type: "deposit", particulars });
+    } else if (voucher === "Bank Payment" || voucher === "Bank Payments") {
+      // Withdrawal handling
+      const lower = particulars.toLowerCase();
+      if (lower.includes("withdraw")) {
+        // Withdrawal → positive cash flow (money coming OUT)
+        const amt = debit - credit;
+        if (amt > 0) flows.push({ date: dt, amount: amt, type: "withdrawal", particulars });
+      } else {
+        // Trades, DP charges, penalties → positive (money back to user)
+        const amt = debit - credit;
+        if (amt > 0) flows.push({ date: dt, amount: amt, type: "withdrawal", particulars });
+        else if (amt < 0) flows.push({ date: dt, amount: amt, type: "deposit", particulars });
+      }
+    }
+  }
+  flows.sort((a, b) => a.date - b.date);
+  return flows;
+}
+
+// ─── XIRR Calculation ───
+
+function daysBetween(d1, d2) {
+  return (d2 - d1) / (1000 * 60 * 60 * 24);
+}
+
+function xnpv(rate, flows) {
+  const d0 = flows[0].date;
+  let npv = 0;
+  for (const f of flows) {
+    const years = daysBetween(d0, f.date) / 365.25;
+    npv += f.amount / Math.pow(1 + rate, years);
+  }
+  return npv;
+}
+
+function xnpvDeriv(rate, flows) {
+  const d0 = flows[0].date;
+  let deriv = 0;
+  for (const f of flows) {
+    const years = daysBetween(d0, f.date) / 365.25;
+    if (years === 0) continue;
+    deriv -= years * f.amount / Math.pow(1 + rate, years + 1);
+  }
+  return deriv;
+}
+
+function computeXIRR(flows) {
+  // Need at least 1 positive and 1 negative flow
+  const hasPos = flows.some(f => f.amount > 0);
+  const hasNeg = flows.some(f => f.amount < 0);
+  if (!hasPos || !hasNeg) return null;
+
+  // Newton-Raphson
+  let rate = 0.1;
+  for (let i = 0; i < 200; i++) {
+    const npv = xnpv(rate, flows);
+    const deriv = xnpvDeriv(rate, flows);
+    if (Math.abs(deriv) < 1e-12) break;
+    const newRate = rate - npv / deriv;
+    if (Math.abs(newRate - rate) < 1e-9) return newRate;
+    rate = newRate;
+    if (rate < -0.999) rate = -0.999;
+  }
+
+  // Bisection fallback
+  let lo = -0.99, hi = 10.0;
+  const npvLo = xnpv(lo, flows);
+  const npvHi = xnpv(hi, flows);
+  if (npvLo * npvHi > 0) return null;
+
+  for (let i = 0; i < 300; i++) {
+    const mid = (lo + hi) / 2;
+    const npvMid = xnpv(mid, flows);
+    if (Math.abs(npvMid) < 1e-8) return mid;
+    if (npvMid * xnpv(lo, flows) < 0) hi = mid;
+    else lo = mid;
+  }
+  return (lo + hi) / 2;
+}
+
+// ─── Benchmark Calculation ───
+
+function findClosestIndex(prices, targetDate, direction) {
+  // direction: "on-or-before" = carry-forward, "on-or-after"
+  const target = formatDate(targetDate);
+  let best = null;
+  let bestDiff = Infinity;
+
+  for (const p of prices) {
+    const diff = compareDateStr(p.date, target);
+    if (direction === "on-or-before") {
+      if (diff <= 0 && Math.abs(diff) < bestDiff) { bestDiff = Math.abs(diff); best = p; }
+    } else {
+      if (diff >= 0 && Math.abs(diff) < bestDiff) { bestDiff = Math.abs(diff); best = p; }
+    }
+  }
+  return best;
+}
+
+function compareDateStr(a, b) {
+  if (a < b) return -1;
+  if (a > b) return 1;
+  return 0;
+}
+
+function formatDate(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function computeBenchmarkXIRR(userFlows, prices, latestClose) {
+  // For each deposit date, buy units at the index level on that date
+  // For each withdrawal date, redeem pro-rata units at the index level
+  // Terminal value = remaining units × latest close
+  const benchFlows = [];
+  let totalUnits = 0;
+
+  const sortedFlows = [...userFlows].sort((a, b) => a.date - b.date);
+
+  for (const f of sortedFlows) {
+    const priceEntry = findClosestIndex(prices, f.date, "on-or-before");
+    if (!priceEntry) continue;
+    const indexLevel = priceEntry.close;
+
+    if (f.amount < 0) {
+      // Deposit: buy units
+      const investAmt = -f.amount;
+      const units = investAmt / indexLevel;
+      totalUnits += units;
+      benchFlows.push({ date: f.date, amount: f.amount });
+    } else {
+      // Withdrawal: redeem pro-rata
+      if (totalUnits > 0) {
+        const redeemAmt = f.amount;
+        const units = redeemAmt / indexLevel;
+        totalUnits = Math.max(0, totalUnits - units);
+        benchFlows.push({ date: f.date, amount: f.amount });
+      }
+    }
+  }
+
+  // Terminal value
+  const terminalValue = totalUnits * latestClose;
+  if (terminalValue <= 0) return null;
+  benchFlows.push({ date: new Date(), amount: terminalValue });
+
+  return computeXIRR(benchFlows);
+}
+
+// ─── UI ───
+
+async function loadMeta() {
+  try {
+    const resp = await fetch(META_URL);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    indexMeta = await resp.json();
+    renderFreshness();
+  } catch (e) {
+    document.getElementById("freshness").textContent = "⚠ Could not load index metadata.";
+  }
+}
+
+function renderFreshness() {
+  if (!indexMeta) return;
+  const el = document.getElementById("freshness");
+  const dt = indexMeta.updated || indexMeta.updatedISO8601;
+  el.innerHTML = `Index data as of <strong>${dt ? new Date(dt).toLocaleDateString() : "unknown"}</strong>. `;
+
+  for (const [key, info] of Object.entries(indexMeta.indices || {})) {
+    const badge = info.status === "ok" ? "badge-ok" :
+                  info.status === "stale" ? "badge-stale" : "badge-unavailable";
+    const label = info.status === "unavailable" ? "unavailable" : info.status;
+    el.innerHTML += `<span class="badge ${badge}">${key}: ${label}</span> `;
+  }
+}
+
+async function loadIndexData(key) {
+  if (indexData[key]) return indexData[key];
+  try {
+    const resp = await fetch(`${DATA_URL_PREFIX}${key}.json`);
+    if (!resp.ok) return null;
+    indexData[key] = await resp.json();
+    return indexData[key];
+  } catch { return null; }
+}
+
+function showPreview() {
+  const csv = document.getElementById("csv-input").value.trim();
+  if (!csv) {
+    document.getElementById("preview-section").classList.add("hidden");
+    return;
+  }
+  const rows = parseCSV(csv);
+  const flows = classifyCashFlows(rows);
+  if (flows.length === 0) {
+    document.getElementById("preview-section").classList.add("hidden");
+    return;
+  }
+
+  const tbody = document.getElementById("preview-body");
+  tbody.innerHTML = "";
+  let totalDeposits = 0, totalWithdrawals = 0;
+  for (const f of flows) {
+    const tr = document.createElement("tr");
+    const typeClass = f.type === "deposit" ? "deposit" : "withdrawal";
+    const typeLabel = f.type === "deposit" ? "Deposit" : "Withdrawal";
+    const absAmt = Math.abs(f.amount);
+    if (f.type === "deposit") totalDeposits += absAmt;
+    else totalWithdrawals += absAmt;
+    tr.innerHTML = `<td>${formatDate(f.date)}</td><td class="${typeClass}">${typeLabel}</td>` +
+                   `<td>₹${absAmt.toLocaleString("en-IN", {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>` +
+                   `<td style="font-size:.75rem;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${f.particulars}</td>`;
+    tbody.appendChild(tr);
+  }
+
+  document.getElementById("preview-summary").textContent =
+    `${flows.length} cash flows: ₹${totalDeposits.toLocaleString("en-IN")} deposited, ₹${totalWithdrawals.toLocaleString("en-IN")} withdrawn.`;
+  document.getElementById("preview-section").classList.remove("hidden");
+}
+
+document.getElementById("csv-input").addEventListener("input", debounce(showPreview, 500));
+
+function debounce(fn, ms) {
+  let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); };
+}
+
+async function compute() {
+  const warnEl = document.getElementById("warnings");
+  const errEl = document.getElementById("errors");
+  warnEl.innerHTML = "";
+  errEl.innerHTML = "";
+
+  const csv = document.getElementById("csv-input").value.trim();
+  const accountValue = parseFloat(document.getElementById("account-value").value);
+
+  if (!csv) { errEl.innerHTML = '<div class="error">Please paste your Zerodha equity ledger CSV.</div>'; return; }
+  if (isNaN(accountValue) || accountValue <= 0) {
+    errEl.innerHTML = '<div class="error">Please enter a valid current account value.</div>';
+    return;
+  }
+
+  const rows = parseCSV(csv);
+  cashFlows = classifyCashFlows(rows);
+
+  if (cashFlows.length === 0) {
+    errEl.innerHTML = '<div class="error">No valid cash flows found. Ensure your CSV has Bank Receipt/Bank Payment voucher types.</div>';
+    return;
+  }
+
+  // Add terminal value (account value today as positive flow)
+  const allFlows = [...cashFlows, { date: new Date(), amount: accountValue }];
+
+  // Compute portfolio XIRR
+  userXIRR = computeXIRR(allFlows);
+  if (userXIRR === null) {
+    errEl.innerHTML = '<div class="error">Could not compute XIRR. Ensure you have at least one deposit and the account value is positive.</div>';
+    return;
+  }
+
+  // Render portfolio XIRR
+  const pEl = document.getElementById("portfolio-xirr");
+  const xirrPct = (userXIRR * 100).toFixed(2);
+  const xirrColor = userXIRR >= 0 ? "var(--green)" : "var(--red)";
+  pEl.innerHTML = `<span class="xirr-value" style="color:${xirrColor}">${xirrPct}%</span>
+    <span style="font-size:.8rem;color:var(--muted);margin-left:.5rem">capital-deployed XIRR</span>`;
+
+  // Check for backfill warnings
+  const earliestDeposit = cashFlows[0].date;
+
+  // Load indices and compute benchmarks
+  benchmarkResults = {};
+  const benchEl = document.getElementById("benchmark-results");
+  benchEl.innerHTML = '<p style="color:var(--muted);font-size:.875rem">Loading index data...</p>';
+
+  if (!indexMeta) await loadMeta();
+
+  const indices = indexMeta ? Object.keys(indexMeta.indices || {}) : [];
+  const okIndices = indices.filter(k => indexMeta.indices[k].status === "ok");
+
+  for (const key of okIndices) {
+    const prices = await loadIndexData(key);
+    if (!prices || prices.length === 0) {
+      benchmarkResults[key] = { xirr: null, error: "No price data" };
+      continue;
+    }
+
+    // Backfill warning
+    const earliestIndex = new Date(prices[0].date);
+    if (earliestDeposit < earliestIndex) {
+      warnEl.innerHTML += `<div class="warning">⚠ Your earliest deposit (${formatDate(earliestDeposit)}) predates ${key}'s data (starts ${prices[0].date}). The benchmark will use the earliest available index level.</div>`;
+    }
+
+    const latestClose = prices[prices.length - 1].close;
+    const bXIRR = computeBenchmarkXIRR(cashFlows, prices, latestClose);
+    benchmarkResults[key] = { xirr: bXIRR, latestClose, latestDate: prices[prices.length - 1].date };
+  }
+
+  // Mark unavailable
+  for (const key of indices) {
+    if (indexMeta.indices[key].status === "unavailable") {
+      benchmarkResults[key] = { xirr: null, error: "price data unavailable" };
+    }
+  }
+
+  renderBenchmarks();
+  renderWeightedSection();
+  document.getElementById("results").classList.remove("hidden");
+}
+
+function renderBenchmarks() {
+  const el = document.getElementById("benchmark-results");
+  el.innerHTML = "";
+
+  const maxAbsXIRR = Math.max(
+    Math.abs(userXIRR || 0),
+    ...Object.values(benchmarkResults).map(r => Math.abs(r.xirr || 0))
+  );
+  const barScale = maxAbsXIRR > 0 ? 100 / maxAbsXIRR : 1;
+
+  for (const [key, result] of Object.entries(benchmarkResults)) {
+    const card = document.createElement("div");
+    card.className = "result-card";
+
+    const name = indexMeta?.indices?.[key] ? key.replace(/_/g, " ") : key;
+
+    if (result.xirr === null) {
+      card.innerHTML = `<h3>${name}</h3><span class="badge badge-unavailable">${result.error || "unavailable"}</span>`;
+    } else {
+      const bPct = (result.xirr * 100).toFixed(2);
+      const uPct = (userXIRR * 100).toFixed(2);
+      const delta = ((userXIRR - result.xirr) * 100).toFixed(2);
+      const deltaSign = delta >= 0 ? "+" : "";
+      const deltaColor = delta >= 0 ? "var(--green)" : "var(--red)";
+      const userColor = userXIRR >= 0 ? "var(--green)" : "var(--red)";
+      const benchColor = result.xirr >= 0 ? "var(--blue)" : "var(--red)";
+
+      const uBarW = Math.min(Math.abs(userXIRR) * barScale, 100);
+      const bBarW = Math.min(Math.abs(result.xirr) * barScale, 100);
+
+      card.innerHTML = `
+        <h3>${name}</h3>
+        <div class="bar-container">
+          <div class="bar-row">
+            <span class="bar-label">You</span>
+            <div class="bar-track"><div class="bar-fill" style="width:${uBarW}%;background:${userColor}"></div></div>
+            <span class="bar-value" style="color:${userColor}">${uPct}%</span>
+          </div>
+          <div class="bar-row">
+            <span class="bar-label">${name}</span>
+            <div class="bar-track"><div class="bar-fill" style="width:${bBarW}%;background:${benchColor}"></div></div>
+            <span class="bar-value" style="color:${benchColor}">${bPct}%</span>
+          </div>
+        </div>
+        <div class="delta" style="color:${deltaColor}">Δ ${deltaSign}${delta} pp ${delta >= 0 ? "(you beat it)" : "(it beat you)"}</div>`;
+    }
+    el.appendChild(card);
+  }
+}
+
+function renderWeightedSection() {
+  const sliderEl = document.getElementById("weight-sliders");
+  sliderEl.innerHTML = "";
+
+  const okKeys = Object.keys(benchmarkResults).filter(k => benchmarkResults[k].xirr !== null);
+  if (okKeys.length === 0) {
+    document.getElementById("weighted-section").classList.add("hidden");
+    return;
+  }
+  document.getElementById("weighted-section").classList.remove("hidden");
+
+  const defaultWeight = Math.round(100 / okKeys.length);
+  const weights = {};
+
+  for (const key of okKeys) {
+    weights[key] = defaultWeight;
+    const row = document.createElement("div");
+    row.className = "slider-row";
+    const name = key.replace(/_/g, " ");
+    row.innerHTML = `<label>${name}</label>
+      <input type="range" min="0" max="100" value="${defaultWeight}" data-key="${key}">
+      <span class="weight-val">${defaultWeight}%</span>`;
+    const slider = row.querySelector("input");
+    const valSpan = row.querySelector(".weight-val");
+    slider.addEventListener("input", () => {
+      weights[key] = parseInt(slider.value);
+      valSpan.textContent = slider.value + "%";
+      updateBasketXIRR(weights);
+    });
+    sliderEl.appendChild(row);
+  }
+
+  updateBasketXIRR(weights);
+}
+
+function updateBasketXIRR(weights) {
+  const totalWeight = Object.values(weights).reduce((a, b) => a + b, 0);
+  if (totalWeight === 0) {
+    document.getElementById("basket-result").textContent = "Set at least one weight > 0.";
+    return;
+  }
+
+  let basketXIRR = 0;
+  for (const [key, w] of Object.entries(weights)) {
+    if (benchmarkResults[key]?.xirr !== null) {
+      basketXIRR += (w / totalWeight) * benchmarkResults[key].xirr;
+    }
+  }
+
+  const bPct = (basketXIRR * 100).toFixed(2);
+  const delta = ((userXIRR - basketXIRR) * 100).toFixed(2);
+  const deltaSign = delta >= 0 ? "+" : "";
+  const deltaColor = delta >= 0 ? "var(--green)" : "var(--red)";
+
+  document.getElementById("basket-result").innerHTML =
+    `<span style="font-size:1.2rem;font-weight:700">Basket XIRR: ${bPct}%</span>` +
+    `<span class="delta" style="color:${deltaColor};margin-left:1rem">Δ ${deltaSign}${delta} pp</span>` +
+    `<span style="font-size:.75rem;color:var(--muted);margin-left:.5rem">(weights normalized to 100%)</span>`;
+}
+
+function reset() {
+  document.getElementById("csv-input").value = "";
+  document.getElementById("account-value").value = "";
+  document.getElementById("results").classList.add("hidden");
+  document.getElementById("preview-section").classList.add("hidden");
+  document.getElementById("warnings").innerHTML = "";
+  document.getElementById("errors").innerHTML = "";
+  cashFlows = [];
+  userXIRR = null;
+  benchmarkResults = {};
+}
+
+// ─── Init ───
+loadMeta();
+</script>
+</body>
+</html>
