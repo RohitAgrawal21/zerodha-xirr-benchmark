@@ -19,7 +19,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
-        run: pip install yfinance
+        run: pip install yfinance requests
 
       - name: Run update script
         env:
