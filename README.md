@@ -10,8 +10,8 @@ A shareable, self-updating dashboard that computes your **capital-deployed XIRR*
 
 ## How It Works
 
-1. **Paste** your Zerodha equity ledger CSV (Console → Reports → Ledger → Equity)
-2. **Enter** your current total account value (holdings MV + idle cash)
+1. **Upload** your Zerodha cash ledger CSV(s) (Console → Reports → Ledger → Download CSV) — supports multiple accounts
+2. **Enter** your current holdings market value per account (cash balance is auto-read from the CSV)
 3. **See** your XIRR vs each index benchmark, with bar charts and a weighted basket comparison
 
 ### What's Computed
