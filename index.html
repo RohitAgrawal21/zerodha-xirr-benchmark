@@ -71,6 +71,11 @@ border-bottom:1px solid #eee}
 font-size:.9rem;text-align:right;width:100%}
 .basket-result{margin-top:.75rem;padding:.75rem;background:#f8f9ff;border-radius:6px}
 
+.btn-dl{display:inline-flex;align-items:center;gap:.35rem;padding:.45rem .8rem;
+border:1px solid #ddd;border-radius:6px;background:#fff;color:#333;font-size:.82rem;
+font-weight:500;cursor:pointer;transition:all .15s}
+.btn-dl:hover{border-color:#4361ee;color:#4361ee;background:#f0f4ff}
+
 .privacy{text-align:center;color:#999;font-size:.75rem;margin-top:2rem;padding-top:1rem;
 border-top:1px solid #eee}
 .freshness{text-align:center;font-size:.8rem;color:#888;margin-bottom:1rem}
@@ -150,6 +155,12 @@ font-size:.875rem;margin-bottom:1rem;display:none}
       <div class="basket-inputs" id="basket-inputs"></div>
       <div class="basket-result" id="basket-result"></div>
     </div>
+
+    <div class="result-block">
+      <h2>Download Index Data</h2>
+      <p style="font-size:.85rem;color:#888;margin-bottom:.75rem">Download the date-wise price data used for each benchmark. Verify that index values match your expectations.</p>
+      <div id="download-buttons" style="display:flex;flex-wrap:wrap;gap:.5rem"></div>
+    </div>
   </div>
 
   <p class="privacy">Your data never leaves this browser. All math runs locally in JavaScript.</p>
@@ -169,7 +180,7 @@ let benchmarkXIRRs = {};
 const INDEX_DISPLAY = {
   nifty50: "Nifty 50", sensex: "Sensex", nifty500: "Nifty 500",
   nifty_midcap150: "Nifty Midcap 150", nifty_next50: "Nifty Next 50",
-  nifty_smallcap250: "Nifty Smallcap 250",
+  nifty_smallcap250: "Nifty Smallcap 250", gold: "Gold (GOLDBEES ETF)",
 };
 
 // ── State: multiple files ──
@@ -519,6 +530,7 @@ async function compute() {
   }
 
   renderBasketInputs(okKeys);
+  renderDownloadButtons(okKeys);
   document.getElementById("results").style.display = "block";
   document.getElementById("results").scrollIntoView({ behavior: "smooth" });
 }
@@ -564,6 +576,34 @@ function updateBasket() {
     `<div><strong>Blended Index XIRR:</strong> <span style="font-size:1.2rem;font-weight:700">${bPct}%</span></div>` +
     `<div><span class="tag ${won?"tag-green":"tag-red"}">${won?"+":""}${delta} pp</span></div></div>` +
     `<div style="font-size:.8rem;color:#888;margin-top:.25rem">You ${won?"beat":"trailed"} this blend by ${Math.abs(delta)} percentage points</div>`;
+}
+
+// ── Download index data ──
+
+function renderDownloadButtons(keys) {
+  const el = document.getElementById("download-buttons");
+  el.innerHTML = "";
+  for (const key of keys) {
+    const btn = document.createElement("button");
+    btn.className = "btn-dl";
+    btn.innerHTML = `⬇ ${INDEX_DISPLAY[key] || key}`;
+    btn.onclick = () => downloadIndexCSV(key);
+    el.appendChild(btn);
+  }
+}
+
+function downloadIndexCSV(key) {
+  const prices = indexData[key];
+  if (!prices || prices.length === 0) return;
+  let csv = "date,close\n";
+  for (const p of prices) csv += p.date + "," + p.close + "\n";
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = key + "_prices.csv";
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 // ── Helpers ──

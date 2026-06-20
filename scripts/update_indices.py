@@ -42,6 +42,11 @@ INDICES = {
         "name": "Nifty Next 50 (Junior BeES ETF proxy)",
         "source": "yfinance",
     },
+    "gold": {
+        "ticker": "GOLDBEES.NS",
+        "name": "Gold (Nippon Gold BeES ETF proxy)",
+        "source": "yfinance",
+    },
 }
 
 

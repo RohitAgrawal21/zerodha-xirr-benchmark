@@ -1,6 +1,6 @@
 {
-  "updated": "2026-06-20T21:56:02Z",
-  "updatedISO8601": "2026-06-20T21:56:02Z",
+  "updated": "2026-06-20T22:51:06Z",
+  "updatedISO8601": "2026-06-20T22:51:06Z",
   "indices": {
     "nifty50": {
       "status": "ok",
@@ -31,6 +31,12 @@
       "source": "yfinance",
       "latestDate": "2026-06-19",
       "latestClose": 781.04
+    },
+    "gold": {
+      "status": "ok",
+      "source": "yfinance",
+      "latestDate": "2026-06-19",
+      "latestClose": 119.79
     },
     "nifty_smallcap250": {
       "status": "unavailable",
