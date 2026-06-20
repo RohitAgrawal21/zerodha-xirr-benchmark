@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Zerodha XIRR vs Index Benchmark</title>
-<meta name="description" content="Upload your Zerodha cash ledger CSV and compare your XIRR against Indian index benchmarks.">
+<meta name="description" content="Upload your Zerodha cash ledger CSVs and compare your XIRR against Indian index benchmarks.">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
@@ -13,35 +13,48 @@ background:#f5f6f8;color:#1a1a2e;line-height:1.6;min-height:100vh}
 h1{font-size:1.6rem;text-align:center;margin-bottom:.25rem}
 .tagline{text-align:center;color:#666;font-size:.9rem;margin-bottom:2rem}
 
-/* Input section */
 .input-section{background:#fff;border-radius:12px;padding:1.5rem;margin-bottom:1.5rem;
 box-shadow:0 1px 3px rgba(0,0,0,.08)}
 .input-section h2{font-size:1rem;margin-bottom:1rem;color:#333}
-.file-drop{border:2px dashed #ccc;border-radius:8px;padding:2rem;text-align:center;
-cursor:pointer;transition:all .2s;margin-bottom:1rem;position:relative}
+
+.file-drop{border:2px dashed #ccc;border-radius:8px;padding:1.5rem;text-align:center;
+cursor:pointer;transition:all .2s;position:relative}
 .file-drop:hover,.file-drop.dragover{border-color:#4361ee;background:#f0f4ff}
 .file-drop input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer}
-.file-drop .icon{font-size:2rem;margin-bottom:.5rem}
+.file-drop .icon{font-size:1.5rem;margin-bottom:.25rem}
 .file-drop .label{font-size:.9rem;color:#666}
-.file-drop .filename{font-size:.85rem;color:#4361ee;font-weight:600;margin-top:.5rem}
-.value-row{display:flex;align-items:center;gap:.75rem}
-.value-row label{font-weight:600;font-size:.9rem;white-space:nowrap}
-.value-row input{flex:1;padding:.6rem .75rem;border:1px solid #ddd;border-radius:6px;font-size:1rem}
+
+.file-list{margin-top:.75rem}
+.file-card{display:flex;align-items:center;justify-content:space-between;
+background:#f8f9ff;border:1px solid #e8ecf4;border-radius:6px;padding:.6rem .75rem;margin-bottom:.5rem}
+.file-card .file-info{flex:1}
+.file-card .file-name{font-weight:600;font-size:.85rem;color:#4361ee}
+.file-card .file-stats{font-size:.8rem;color:#666}
+.file-card .remove-btn{background:none;border:none;color:#999;cursor:pointer;font-size:1.1rem;
+padding:0 .25rem;margin-left:.5rem}
+.file-card .remove-btn:hover{color:#dc2626}
+
+.value-section{margin-top:.5rem}
+.value-row{display:grid;grid-template-columns:auto 1fr auto;gap:.5rem;align-items:center;margin-bottom:.5rem}
+.value-row label{font-size:.9rem;color:#555;white-space:nowrap}
+.value-row input{padding:.5rem .6rem;border:1px solid #ddd;border-radius:6px;font-size:.95rem;text-align:right}
+.value-total{display:flex;justify-content:space-between;align-items:center;
+padding:.6rem .75rem;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;margin-top:.5rem}
+.value-total .total-label{font-size:.9rem;font-weight:600;color:#16a34a}
+.value-total .total-amount{font-size:1.1rem;font-weight:700;color:#16a34a}
+
 .btn{padding:.65rem 2rem;border:none;border-radius:6px;font-size:.95rem;font-weight:600;
 cursor:pointer;margin-top:1rem;transition:background .2s}
 .btn-go{background:#4361ee;color:#fff;width:100%}
 .btn-go:hover{background:#3a56d4}
-.btn-go:disabled{background:#aaa;cursor:not-allowed}
 
-/* Results */
 .results{display:none}
 .result-block{background:#fff;border-radius:12px;padding:1.5rem;margin-bottom:1rem;
 box-shadow:0 1px 3px rgba(0,0,0,.08)}
 .result-block h2{font-size:1rem;color:#666;margin-bottom:.75rem;font-weight:500}
 .big-number{font-size:2.2rem;font-weight:700;letter-spacing:-.5px}
-.green{color:#16a34a}.red{color:#dc2626}.blue{color:#4361ee}
+.green{color:#16a34a}.red{color:#dc2626}
 
-/* Comparison rows */
 .compare-table{width:100%;border-collapse:collapse;margin-top:.5rem}
 .compare-table th{text-align:left;font-size:.8rem;color:#999;font-weight:500;padding:.4rem 0;
 border-bottom:1px solid #eee}
@@ -52,27 +65,25 @@ border-bottom:1px solid #eee}
 .tag-green{background:#dcfce7;color:#16a34a}
 .tag-red{background:#fee2e2;color:#dc2626}
 
-/* Custom basket */
 .basket-inputs{display:grid;grid-template-columns:1fr 80px;gap:.5rem .75rem;align-items:center;margin:.75rem 0}
 .basket-inputs label{font-size:.9rem}
 .basket-inputs input{padding:.4rem .5rem;border:1px solid #ddd;border-radius:4px;
 font-size:.9rem;text-align:right;width:100%}
 .basket-result{margin-top:.75rem;padding:.75rem;background:#f8f9ff;border-radius:6px}
 
-/* Privacy */
 .privacy{text-align:center;color:#999;font-size:.75rem;margin-top:2rem;padding-top:1rem;
 border-top:1px solid #eee}
-
-/* Freshness */
 .freshness{text-align:center;font-size:.8rem;color:#888;margin-bottom:1rem}
-
 .error-msg{background:#fee2e2;color:#991b1b;padding:.75rem;border-radius:6px;
 font-size:.875rem;margin-bottom:1rem;display:none}
+.hint{font-size:.8rem;color:#999;margin-top:.25rem}
 
 @media(max-width:500px){
   .container{padding:1rem .5rem}
   .big-number{font-size:1.8rem}
   .basket-inputs{grid-template-columns:1fr 70px}
+  .value-row{grid-template-columns:auto 1fr}
+  .value-row .plus{display:none}
 }
 </style>
 </head>
@@ -83,41 +94,47 @@ font-size:.875rem;margin-bottom:1rem;display:none}
   <p class="tagline">How did your portfolio do compared to just buying the index?</p>
   <div id="freshness" class="freshness"></div>
 
-  <!-- INPUTS -->
+  <!-- STEP 1: Upload CSVs -->
   <div class="input-section">
-    <h2>1. Upload your Zerodha Cash Ledger</h2>
+    <h2>1. Upload Zerodha Cash Ledger(s)</h2>
     <div class="file-drop" id="file-drop">
       <div class="icon">📂</div>
-      <div class="label">Click or drag your <strong>ledger CSV</strong> here</div>
-      <div class="label" style="font-size:.75rem;color:#999;margin-top:.25rem">Kite → Console → Reports → Ledger → Download CSV</div>
-      <div class="filename" id="filename"></div>
-      <input type="file" id="file-input" accept=".csv">
+      <div class="label">Click or drag <strong>ledger CSV file(s)</strong> here</div>
+      <div style="font-size:.75rem;color:#999;margin-top:.25rem">Kite → Console → Reports → Ledger → Download CSV</div>
+      <input type="file" id="file-input" accept=".csv" multiple>
     </div>
-    <div id="file-summary" style="font-size:.85rem;color:#666;margin-bottom:1rem"></div>
+    <div class="file-list" id="file-list"></div>
+    <div id="combined-summary" style="font-size:.85rem;color:#666;margin-top:.5rem"></div>
   </div>
 
+  <!-- STEP 2: Portfolio values -->
   <div class="input-section">
     <h2>2. Enter today's portfolio value</h2>
-    <div class="value-row">
-      <label>₹</label>
-      <input type="number" id="account-value" placeholder="Current holdings value + cash balance" min="0" step="1">
+    <p class="hint" style="margin-bottom:.75rem">Enter each account's current value (holdings + cash). They'll be added up automatically.</p>
+    <div class="value-section" id="value-section">
+      <div class="value-row">
+        <label>Account 1 ₹</label>
+        <input type="number" class="acct-value" placeholder="0" min="0" step="1" oninput="updateTotal()">
+        <span class="plus"></span>
+      </div>
+    </div>
+    <div class="value-total" id="value-total" style="display:none">
+      <span class="total-label">Combined Value</span>
+      <span class="total-amount" id="total-display">₹0</span>
     </div>
   </div>
 
   <div id="error-msg" class="error-msg"></div>
-  <button class="btn btn-go" id="compute-btn" onclick="compute()">Calculate XIRR</button>
+  <button class="btn btn-go" onclick="compute()">Calculate XIRR</button>
 
   <!-- RESULTS -->
   <div class="results" id="results">
-
-    <!-- 1. Your XIRR -->
     <div class="result-block">
-      <h2>Your Portfolio XIRR</h2>
+      <h2>Your Combined Portfolio XIRR</h2>
       <div class="big-number" id="my-xirr"></div>
       <div id="my-xirr-sub" style="font-size:.85rem;color:#888;margin-top:.25rem"></div>
     </div>
 
-    <!-- 2 & 3. Individual index benchmarks -->
     <div class="result-block">
       <h2>If you had invested in an index instead</h2>
       <table class="compare-table">
@@ -126,16 +143,15 @@ font-size:.875rem;margin-bottom:1rem;display:none}
       </table>
     </div>
 
-    <!-- 4. Custom weighted basket -->
     <div class="result-block">
       <h2>Custom Blend — what if you split across indices?</h2>
-      <p style="font-size:.85rem;color:#888;margin-bottom:.5rem">Enter the % you'd allocate to each index. Doesn't need to add to 100 — it auto-normalizes.</p>
+      <p style="font-size:.85rem;color:#888;margin-bottom:.5rem">Enter the % you'd allocate to each. Auto-normalizes to 100%.</p>
       <div class="basket-inputs" id="basket-inputs"></div>
       <div class="basket-result" id="basket-result"></div>
     </div>
   </div>
 
-  <p class="privacy">🔒 Your data never leaves this browser. All math runs locally in JavaScript.</p>
+  <p class="privacy">Your data never leaves this browser. All math runs locally in JavaScript.</p>
 </div>
 
 <script>
@@ -146,18 +162,18 @@ const DATA_PREFIX = "data/";
 
 let indexMeta = null;
 let indexData = {};
-let cashFlows = [];
 let userXIRR = null;
 let benchmarkXIRRs = {};
 
 const INDEX_DISPLAY = {
-  nifty50: "Nifty 50",
-  sensex: "Sensex",
-  nifty500: "Nifty 500",
-  nifty_midcap150: "Nifty Midcap 150",
-  nifty_next50: "Nifty Next 50",
+  nifty50: "Nifty 50", sensex: "Sensex", nifty500: "Nifty 500",
+  nifty_midcap150: "Nifty Midcap 150", nifty_next50: "Nifty Next 50",
   nifty_smallcap250: "Nifty Smallcap 250",
 };
+
+// ── State: multiple files ──
+
+const uploadedFiles = []; // [{name, csvText, flows}]
 
 // ── CSV Parsing ──
 
@@ -224,7 +240,6 @@ function extractCashFlows(rows) {
     if (!dt) continue;
     const debit = num(r.debit);
     const credit = num(r.credit);
-
     if (vt === "Bank Receipts" || vt === "Bank Receipt") {
       if (credit > 0) flows.push({ date: dt, amount: -credit, type: "deposit" });
     } else if (vt === "Bank Payments" || vt === "Bank Payment") {
@@ -284,8 +299,7 @@ function findPrice(prices, dt) {
   const target = fmt(dt);
   let best = null;
   for (const p of prices) {
-    if (p.date <= target) best = p;
-    else break;
+    if (p.date <= target) best = p; else break;
   }
   return best;
 }
@@ -294,7 +308,7 @@ function fmt(d) {
   return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
 }
 
-function benchmarkXIRR(userFlows, prices, latestClose) {
+function benchmarkXIRRCalc(userFlows, prices, latestClose) {
   const bFlows = [];
   let units = 0;
   for (const f of userFlows) {
@@ -305,8 +319,7 @@ function benchmarkXIRR(userFlows, prices, latestClose) {
       bFlows.push({ date: f.date, amount: f.amount });
     } else {
       if (units > 0) {
-        const redeem = f.amount / p.close;
-        units = Math.max(0, units - redeem);
+        units = Math.max(0, units - f.amount / p.close);
         bFlows.push({ date: f.date, amount: f.amount });
       }
     }
@@ -317,43 +330,109 @@ function benchmarkXIRR(userFlows, prices, latestClose) {
   return computeXIRR(bFlows);
 }
 
-// ── File handling ──
+// ── File handling (multiple) ──
 
 const fileInput = document.getElementById("file-input");
 const fileDrop = document.getElementById("file-drop");
-let csvText = null;
 
 fileDrop.addEventListener("dragover", e => { e.preventDefault(); fileDrop.classList.add("dragover"); });
 fileDrop.addEventListener("dragleave", () => fileDrop.classList.remove("dragover"));
 fileDrop.addEventListener("drop", e => {
   e.preventDefault();
   fileDrop.classList.remove("dragover");
-  if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+  for (const f of e.dataTransfer.files) processFile(f);
 });
-fileInput.addEventListener("change", () => { if (fileInput.files.length) handleFile(fileInput.files[0]); });
+fileInput.addEventListener("change", () => {
+  for (const f of fileInput.files) processFile(f);
+  fileInput.value = "";
+});
 
-function handleFile(file) {
-  if (!file.name.toLowerCase().endsWith(".csv")) {
-    showError("Please upload a .csv file.");
-    return;
-  }
-  document.getElementById("filename").textContent = "✓ " + file.name;
+function processFile(file) {
+  if (!file.name.toLowerCase().endsWith(".csv")) { showError("Only .csv files are accepted."); return; }
   const reader = new FileReader();
   reader.onload = () => {
-    csvText = reader.result;
-    const rows = parseCSV(csvText);
+    const text = reader.result;
+    const rows = parseCSV(text);
     const flows = extractCashFlows(rows);
-    const deps = flows.filter(f => f.type === "deposit");
-    const wds = flows.filter(f => f.type === "withdrawal");
-    const totalIn = deps.reduce((s, f) => s + Math.abs(f.amount), 0);
-    const totalOut = wds.reduce((s, f) => s + f.amount, 0);
-    document.getElementById("file-summary").innerHTML =
-      `Found <strong>${deps.length}</strong> deposits (₹${inr(totalIn)}) and ` +
-      `<strong>${wds.length}</strong> withdrawals (₹${inr(totalOut)}) ` +
-      `from ${fmt(flows[0]?.date || new Date())} to ${fmt(flows[flows.length-1]?.date || new Date())}`;
+    if (flows.length === 0) { showError(`No cash flows found in ${file.name}. Is this a Zerodha cash ledger?`); return; }
+    uploadedFiles.push({ name: file.name, csvText: text, flows });
+    renderFileList();
+    syncValueInputs();
     clearError();
   };
   reader.readAsText(file);
+}
+
+function removeFile(idx) {
+  uploadedFiles.splice(idx, 1);
+  renderFileList();
+  syncValueInputs();
+}
+
+function renderFileList() {
+  const el = document.getElementById("file-list");
+  el.innerHTML = "";
+  uploadedFiles.forEach((f, i) => {
+    const deps = f.flows.filter(x => x.type === "deposit");
+    const wds = f.flows.filter(x => x.type === "withdrawal");
+    const totalIn = deps.reduce((s, x) => s + Math.abs(x.amount), 0);
+    const totalOut = wds.reduce((s, x) => s + x.amount, 0);
+    const div = document.createElement("div");
+    div.className = "file-card";
+    div.innerHTML = `<div class="file-info">
+      <div class="file-name">${f.name}</div>
+      <div class="file-stats">${deps.length} deposits (₹${inr(totalIn)}) · ${wds.length} withdrawals (₹${inr(totalOut)}) · ${fmt(f.flows[0].date)} to ${fmt(f.flows[f.flows.length-1].date)}</div>
+    </div>
+    <button class="remove-btn" onclick="removeFile(${i})" title="Remove">✕</button>`;
+    el.appendChild(div);
+  });
+
+  const sumEl = document.getElementById("combined-summary");
+  if (uploadedFiles.length > 1) {
+    const allFlows = uploadedFiles.flatMap(f => f.flows);
+    const totalDeps = allFlows.filter(x => x.type === "deposit").reduce((s, x) => s + Math.abs(x.amount), 0);
+    const totalWds = allFlows.filter(x => x.type === "withdrawal").reduce((s, x) => s + x.amount, 0);
+    sumEl.innerHTML = `<strong>Combined:</strong> ${allFlows.length} cash flows · ₹${inr(totalDeps)} deposited · ₹${inr(totalWds)} withdrawn`;
+  } else {
+    sumEl.innerHTML = "";
+  }
+}
+
+function syncValueInputs() {
+  const section = document.getElementById("value-section");
+  const n = Math.max(1, uploadedFiles.length);
+  const existing = section.querySelectorAll(".acct-value");
+  const oldVals = Array.from(existing).map(inp => inp.value);
+
+  section.innerHTML = "";
+  for (let i = 0; i < n; i++) {
+    const label = n === 1 ? "Portfolio ₹" : `Account ${i + 1} ₹`;
+    const row = document.createElement("div");
+    row.className = "value-row";
+    row.innerHTML = `<label>${label}</label>
+      <input type="number" class="acct-value" placeholder="0" min="0" step="1" oninput="updateTotal()">
+      ${i < n - 1 ? '<span class="plus" style="font-size:1.2rem;color:#999;font-weight:700">+</span>' : '<span class="plus"></span>'}`;
+    const inp = row.querySelector("input");
+    if (oldVals[i]) inp.value = oldVals[i];
+    section.appendChild(row);
+  }
+
+  document.getElementById("value-total").style.display = n > 1 ? "flex" : "none";
+  updateTotal();
+}
+
+function updateTotal() {
+  const inputs = document.querySelectorAll(".acct-value");
+  let total = 0;
+  inputs.forEach(inp => { total += parseFloat(inp.value) || 0; });
+  document.getElementById("total-display").textContent = "₹" + inr(total);
+}
+
+function getTotalValue() {
+  const inputs = document.querySelectorAll(".acct-value");
+  let total = 0;
+  inputs.forEach(inp => { total += parseFloat(inp.value) || 0; });
+  return total;
 }
 
 function inr(n) { return n.toLocaleString("en-IN", { maximumFractionDigits: 0 }); }
@@ -362,44 +441,37 @@ function inr(n) { return n.toLocaleString("en-IN", { maximumFractionDigits: 0 })
 
 async function compute() {
   clearError();
-  if (!csvText) { showError("Please upload your Zerodha cash ledger CSV first."); return; }
-  const av = parseFloat(document.getElementById("account-value").value);
-  if (isNaN(av) || av <= 0) { showError("Please enter your current portfolio value."); return; }
+  if (uploadedFiles.length === 0) { showError("Please upload at least one Zerodha cash ledger CSV."); return; }
+  const av = getTotalValue();
+  if (av <= 0) { showError("Please enter your current portfolio value."); return; }
 
-  const rows = parseCSV(csvText);
-  cashFlows = extractCashFlows(rows);
-  if (cashFlows.length < 1) { showError("No deposits or withdrawals found in the CSV. Check that it's a Zerodha cash ledger."); return; }
+  const allFlows = uploadedFiles.flatMap(f => f.flows).sort((a, b) => a.date - b.date);
+  const xirrFlows = [...allFlows, { date: new Date(), amount: av }];
+  userXIRR = computeXIRR(xirrFlows);
+  if (userXIRR === null) { showError("Could not compute XIRR. Ensure you have deposits and a positive portfolio value."); return; }
 
-  const allFlows = [...cashFlows, { date: new Date(), amount: av }];
-  userXIRR = computeXIRR(allFlows);
-  if (userXIRR === null) { showError("Could not compute XIRR. Make sure you have at least one deposit and a positive portfolio value."); return; }
-
-  // Show portfolio XIRR
   const pct = (userXIRR * 100).toFixed(2);
   const el = document.getElementById("my-xirr");
   el.textContent = pct + "%";
   el.className = "big-number " + (userXIRR >= 0 ? "green" : "red");
-  const totalIn = cashFlows.filter(f => f.type === "deposit").reduce((s, f) => s + Math.abs(f.amount), 0);
-  const totalOut = cashFlows.filter(f => f.type === "withdrawal").reduce((s, f) => s + f.amount, 0);
+  const totalIn = allFlows.filter(f => f.type === "deposit").reduce((s, f) => s + Math.abs(f.amount), 0);
+  const totalOut = allFlows.filter(f => f.type === "withdrawal").reduce((s, f) => s + f.amount, 0);
+  const acctLabel = uploadedFiles.length > 1 ? ` across ${uploadedFiles.length} accounts` : "";
   document.getElementById("my-xirr-sub").textContent =
-    `Invested ₹${inr(totalIn)} · Withdrew ₹${inr(totalOut)} · Current value ₹${inr(av)}`;
+    `Invested ₹${inr(totalIn)} · Withdrew ₹${inr(totalOut)} · Current value ₹${inr(av)}${acctLabel}`;
 
-  // Load indices & compute benchmarks
   if (!indexMeta) await loadMeta();
   const tbody = document.getElementById("compare-body");
   tbody.innerHTML = "";
   benchmarkXIRRs = {};
 
   const okKeys = indexMeta ? Object.keys(indexMeta.indices).filter(k => indexMeta.indices[k].status === "ok") : [];
-
   for (const key of okKeys) {
     const prices = await loadIndex(key);
     if (!prices) { benchmarkXIRRs[key] = null; continue; }
-    const latest = prices[prices.length - 1].close;
-    benchmarkXIRRs[key] = benchmarkXIRR(cashFlows, prices, latest);
+    benchmarkXIRRs[key] = benchmarkXIRRCalc(allFlows, prices, prices[prices.length - 1].close);
   }
 
-  // Render comparison table
   for (const key of okKeys) {
     const tr = document.createElement("tr");
     const bx = benchmarkXIRRs[key];
@@ -409,17 +481,13 @@ async function compute() {
       const bPct = (bx * 100).toFixed(2);
       const delta = ((userXIRR - bx) * 100).toFixed(2);
       const won = delta >= 0;
-      const sign = won ? "+" : "";
-      tr.innerHTML = `<td>${INDEX_DISPLAY[key] || key}</td>` +
-        `<td>${bPct}%</td>` +
-        `<td><span class="tag ${won ? "tag-green" : "tag-red"}">${sign}${delta} pp</span></td>`;
+      tr.innerHTML = `<td>${INDEX_DISPLAY[key] || key}</td><td>${bPct}%</td>` +
+        `<td><span class="tag ${won?"tag-green":"tag-red"}">${won?"+":""}${delta} pp</span></td>`;
     }
     tbody.appendChild(tr);
   }
 
-  // Custom basket
   renderBasketInputs(okKeys);
-
   document.getElementById("results").style.display = "block";
   document.getElementById("results").scrollIntoView({ behavior: "smooth" });
 }
@@ -440,10 +508,8 @@ function renderBasketInputs(keys) {
     el.appendChild(lbl);
     el.appendChild(inp);
   }
-  // Set equal weights as default
-  const n = validKeys.length;
-  if (n > 0) {
-    const def = Math.round(100 / n);
+  if (validKeys.length > 0) {
+    const def = Math.round(100 / validKeys.length);
     el.querySelectorAll("input").forEach(inp => { inp.value = def; });
     updateBasket();
   }
@@ -455,28 +521,18 @@ function updateBasket() {
   inputs.forEach(inp => {
     const w = parseFloat(inp.value) || 0;
     const key = inp.dataset.key;
-    if (w > 0 && benchmarkXIRRs[key] !== null) {
-      totalW += w;
-      blended += w * benchmarkXIRRs[key];
-    }
+    if (w > 0 && benchmarkXIRRs[key] !== null) { totalW += w; blended += w * benchmarkXIRRs[key]; }
   });
-
   const el = document.getElementById("basket-result");
-  if (totalW === 0) {
-    el.innerHTML = '<span style="color:#999">Enter at least one weight above 0.</span>';
-    return;
-  }
+  if (totalW === 0) { el.innerHTML = '<span style="color:#999">Enter at least one weight above 0.</span>'; return; }
   blended /= totalW;
   const bPct = (blended * 100).toFixed(2);
   const delta = ((userXIRR - blended) * 100).toFixed(2);
   const won = delta >= 0;
-  const sign = won ? "+" : "";
-  const color = won ? "#16a34a" : "#dc2626";
-
   el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center">` +
     `<div><strong>Blended Index XIRR:</strong> <span style="font-size:1.2rem;font-weight:700">${bPct}%</span></div>` +
-    `<div><span class="tag ${won?"tag-green":"tag-red"}">${sign}${delta} pp</span></div></div>` +
-    `<div style="font-size:.8rem;color:#888;margin-top:.25rem">You ${won ? "beat" : "trailed"} this blend by ${Math.abs(delta)} percentage points</div>`;
+    `<div><span class="tag ${won?"tag-green":"tag-red"}">${won?"+":""}${delta} pp</span></div></div>` +
+    `<div style="font-size:.8rem;color:#888;margin-top:.25rem">You ${won?"beat":"trailed"} this blend by ${Math.abs(delta)} percentage points</div>`;
 }
 
 // ── Helpers ──
@@ -500,13 +556,8 @@ async function loadIndex(key) {
   } catch { return null; }
 }
 
-function showError(msg) {
-  const el = document.getElementById("error-msg");
-  el.textContent = msg; el.style.display = "block";
-}
-function clearError() {
-  document.getElementById("error-msg").style.display = "none";
-}
+function showError(msg) { const el = document.getElementById("error-msg"); el.textContent = msg; el.style.display = "block"; }
+function clearError() { document.getElementById("error-msg").style.display = "none"; }
 
 loadMeta();
 </script>
