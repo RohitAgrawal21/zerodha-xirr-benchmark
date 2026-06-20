@@ -6,7 +6,7 @@ A shareable, self-updating dashboard that computes your **capital-deployed XIRR*
 
 ## Live Demo
 
-👉 **[Open Dashboard](https://<your-username>.github.io/zerodha-xirr-benchmark/)**
+👉 **[Open Dashboard](https://RohitAgrawal21.github.io/zerodha-xirr-benchmark/)**
 
 ## How It Works
 
