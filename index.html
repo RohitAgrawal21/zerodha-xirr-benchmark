@@ -131,13 +131,25 @@ font-size:.875rem;margin-bottom:1rem;display:none}
     <p style="font-size:.8rem;color:#888;margin-top:.5rem">Have multiple Zerodha accounts? Upload each ledger separately — we'll combine them and give you a single cumulative XIRR.</p>
   </div>
 
+  <!-- Assumptions -->
+  <div class="input-section" style="background:#f8f9ff;border:1px solid #e0e4f0">
+    <h2 style="font-size:.95rem;margin-bottom:.5rem">Assumptions &amp; limitations</h2>
+    <ul style="font-size:.78rem;color:#555;padding-left:1.1rem;margin:0;line-height:1.6">
+      <li><strong>Dividends:</strong> Ignored on both sides — your dividends aren't in the ledger, index data uses price returns. Fair comparison.</li>
+      <li><strong>Unlisted / Gifted shares:</strong> Not captured.</li>
+      <li><strong>IPOs via ASBA:</strong> Money goes from bank, not Zerodha — add manually below.</li>
+      <li><strong>Buybacks:</strong> Proceeds go to bank — add manually below if not in the ledger.</li>
+      <li><strong>Mutual Funds (pre-April 2022):</strong> Coin purchases show in the ledger and distort stock XIRR — we auto-detect and let you exclude them.</li>
+    </ul>
+  </div>
+
   <!-- MF Exclusion -->
   <div class="input-section" id="mf-section" style="display:none;background:#fff8e1;border:1px solid #ffe082">
     <h2 style="font-size:.95rem;margin-bottom:.5rem">Mutual Fund transactions detected</h2>
-    <p style="font-size:.8rem;color:#7b6b2e;margin-bottom:.5rem">We found entries that look like Mutual Fund / Coin transactions in your ledger. These can distort your stock XIRR if MF purchases were routed through your Zerodha account (common before April 2022). Review and confirm below.</p>
+    <p style="font-size:.78rem;color:#7b6b2e;margin-bottom:.5rem">These look like Coin/MF entries. Excluding them gives a cleaner stock-only XIRR.</p>
     <label style="display:flex;align-items:center;gap:.5rem;font-size:.85rem;cursor:pointer;margin-bottom:.5rem">
       <input type="checkbox" id="exclude-mf" checked onchange="toggleMFExclusion()">
-      <strong>Exclude these MF transactions from XIRR calculation</strong>
+      <strong>Exclude from XIRR</strong>
     </label>
     <div id="mf-entries" style="max-height:200px;overflow-y:auto;font-size:.78rem;border:1px solid #e0d8b0;border-radius:6px;background:#fffef5"></div>
   </div>
@@ -145,26 +157,12 @@ font-size:.875rem;margin-bottom:1rem;display:none}
   <!-- Manual entries: IPO & Buyback -->
   <div class="input-section">
     <h2 style="font-size:.95rem;margin-bottom:.5rem">Manual adjustments (optional)</h2>
-    <p style="font-size:.8rem;color:#666;margin-bottom:.75rem">If you applied for IPOs via ASBA (through your bank) or had shares bought back, those won't appear in the Zerodha ledger but affect your returns. Add them here.<br>
-    <strong>How to find IPO details:</strong> Kite → Console → Account → Ledger → search for the company name. If the IPO was via ASBA, it won't be there — check your bank statement for the debit date and amount.<br>
-    <strong>Buyback:</strong> Check your bank statement for the credit from the buyback. The shares would have disappeared from your holdings.</p>
+    <p style="font-size:.78rem;color:#666;margin-bottom:.5rem">Add IPOs (ASBA — check bank statement for date &amp; amount) or buybacks not reflected in the Zerodha ledger.</p>
     <div id="manual-entries"></div>
     <div style="display:flex;gap:.5rem;margin-top:.5rem">
       <button class="btn-dl" onclick="addManualEntry('ipo')">+ Add IPO</button>
       <button class="btn-dl" onclick="addManualEntry('buyback')">+ Add Buyback</button>
     </div>
-  </div>
-
-  <!-- Disclaimers -->
-  <div class="input-section" style="background:#f8f9ff;border:1px solid #e0e4f0">
-    <h2 style="font-size:.95rem;margin-bottom:.5rem">Assumptions &amp; limitations</h2>
-    <ul style="font-size:.8rem;color:#555;padding-left:1.25rem;margin:0;line-height:1.7">
-      <li><strong>Dividends:</strong> Assumed zero on both sides. Your stock dividends are not in the cash ledger, and the index data uses price returns (not total returns). The comparison stays fair — apples to apples.</li>
-      <li><strong>Unlisted shares / Gifted shares:</strong> Not factored in. If you received shares as a gift or hold unlisted shares, their value is not captured here.</li>
-      <li><strong>IPOs (via ASBA):</strong> Money goes from your bank directly — not through Zerodha. Use the "Add IPO" button above to include these. If the IPO was applied through Zerodha (not ASBA), it's already in your ledger.</li>
-      <li><strong>Buybacks:</strong> Proceeds go to your bank, shares leave your demat. Use "Add Buyback" above if not reflected in the ledger.</li>
-      <li><strong>Mutual Funds:</strong> Before April 2022, MF purchases via Zerodha Coin were deducted from your trading account and appear in the ledger. We auto-detect and flag these — you can exclude them above. After April 2022, MF purchases are no longer routed through Zerodha.</li>
-    </ul>
   </div>
 
   <!-- STEP 2: Portfolio values -->
