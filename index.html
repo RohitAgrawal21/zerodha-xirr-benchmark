@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Zerodha XIRR vs Index Benchmark</title>
+<title>Did You Beat the Index? — Zerodha XIRR Benchmark</title>
 <meta name="description" content="Upload your Zerodha cash ledger CSVs and compare your XIRR against Indian index benchmarks.">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -98,8 +98,8 @@ font-size:.875rem;margin-bottom:1rem;display:none}
 <body>
 
 <div class="container">
-  <h1>Zerodha XIRR vs Index Benchmark</h1>
-  <p class="tagline">How did your portfolio do compared to just buying the index?</p>
+  <h1>Did You Beat the Index?</h1>
+  <p class="tagline">Your actual Zerodha XIRR vs what you'd have earned if every deposit and withdrawal went into an index instead — same amounts, same dates.</p>
 
   <div style="background:#e8f5e9;border:1px solid #c8e6c9;border-radius:8px;padding:.6rem 1rem;margin-bottom:1rem;font-size:.8rem;color:#2e7d32;text-align:center">
     🔒 <strong>Your data is 100% private.</strong> Your CSV is processed entirely in your browser — no data is uploaded, stored, or shared with any server. This tool has no backend, no database, and no tracking of your financial information. <a href="https://github.com/RohitAgrawal21/zerodha-xirr-benchmark" target="_blank" style="color:#1b5e20">View source code</a>
@@ -128,6 +128,7 @@ font-size:.875rem;margin-bottom:1rem;display:none}
     </div>
     <div class="file-list" id="file-list"></div>
     <div id="combined-summary" style="font-size:.85rem;color:#666;margin-top:.5rem"></div>
+    <p style="font-size:.8rem;color:#888;margin-top:.5rem">Have multiple Zerodha accounts? Upload each ledger separately — we'll combine them and give you a single cumulative XIRR.</p>
   </div>
 
   <!-- STEP 2: Portfolio values -->
@@ -161,6 +162,7 @@ font-size:.875rem;margin-bottom:1rem;display:none}
 
     <div class="result-block">
       <h2>If you had invested in an index instead</h2>
+      <p style="font-size:.82rem;color:#666;margin-bottom:.75rem">For each index below, we simulate: every time you deposited money, it bought index units at that day's price. Every withdrawal sold units at that day's price.</p>
       <table class="compare-table">
         <thead><tr><th>Index</th><th>XIRR</th><th>vs You</th><th></th></tr></thead>
         <tbody id="compare-body"></tbody>
