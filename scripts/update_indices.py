@@ -33,9 +33,9 @@ INDICES = {
         "name": "Nifty 500",
         "source": "yfinance",
     },
-    "nifty_midcap150": {
-        "ticker": "NIFTYMIDCAP150.NS",
-        "name": "Nifty Midcap 150",
+    "nifty_midcap100": {
+        "ticker": "NIFTY_MIDCAP_100.NS",
+        "name": "Nifty Midcap 100",
         "source": "yfinance",
     },
     "nifty_next50": {
@@ -189,9 +189,9 @@ def send_telegram_alert(message: str):
 
 
 MFAPI_INDICES = {
-    "nifty_smallcap250": {
-        "mf_code": 147623,
-        "name": "Nifty Smallcap 250 (Motilal Oswal Index Fund NAV proxy)",
+    "smallcap": {
+        "mf_code": 105989,
+        "name": "Smallcap (DSP Small Cap Fund NAV proxy)",
         "source": "mfapi",
     },
 }
