@@ -131,6 +131,42 @@ font-size:.875rem;margin-bottom:1rem;display:none}
     <p style="font-size:.8rem;color:#888;margin-top:.5rem">Have multiple Zerodha accounts? Upload each ledger separately — we'll combine them and give you a single cumulative XIRR.</p>
   </div>
 
+  <!-- MF Exclusion -->
+  <div class="input-section" id="mf-section" style="display:none;background:#fff8e1;border:1px solid #ffe082">
+    <h2 style="font-size:.95rem;margin-bottom:.5rem">Mutual Fund transactions detected</h2>
+    <p style="font-size:.8rem;color:#7b6b2e;margin-bottom:.5rem">We found entries that look like Mutual Fund / Coin transactions in your ledger. These can distort your stock XIRR if MF purchases were routed through your Zerodha account (common before April 2022). Review and confirm below.</p>
+    <label style="display:flex;align-items:center;gap:.5rem;font-size:.85rem;cursor:pointer;margin-bottom:.5rem">
+      <input type="checkbox" id="exclude-mf" checked onchange="toggleMFExclusion()">
+      <strong>Exclude these MF transactions from XIRR calculation</strong>
+    </label>
+    <div id="mf-entries" style="max-height:200px;overflow-y:auto;font-size:.78rem;border:1px solid #e0d8b0;border-radius:6px;background:#fffef5"></div>
+  </div>
+
+  <!-- Manual entries: IPO & Buyback -->
+  <div class="input-section">
+    <h2 style="font-size:.95rem;margin-bottom:.5rem">Manual adjustments (optional)</h2>
+    <p style="font-size:.8rem;color:#666;margin-bottom:.75rem">If you applied for IPOs via ASBA (through your bank) or had shares bought back, those won't appear in the Zerodha ledger but affect your returns. Add them here.<br>
+    <strong>How to find IPO details:</strong> Kite → Console → Account → Ledger → search for the company name. If the IPO was via ASBA, it won't be there — check your bank statement for the debit date and amount.<br>
+    <strong>Buyback:</strong> Check your bank statement for the credit from the buyback. The shares would have disappeared from your holdings.</p>
+    <div id="manual-entries"></div>
+    <div style="display:flex;gap:.5rem;margin-top:.5rem">
+      <button class="btn-dl" onclick="addManualEntry('ipo')">+ Add IPO</button>
+      <button class="btn-dl" onclick="addManualEntry('buyback')">+ Add Buyback</button>
+    </div>
+  </div>
+
+  <!-- Disclaimers -->
+  <div class="input-section" style="background:#f8f9ff;border:1px solid #e0e4f0">
+    <h2 style="font-size:.95rem;margin-bottom:.5rem">Assumptions &amp; limitations</h2>
+    <ul style="font-size:.8rem;color:#555;padding-left:1.25rem;margin:0;line-height:1.7">
+      <li><strong>Dividends:</strong> Assumed zero on both sides. Your stock dividends are not in the cash ledger, and the index data uses price returns (not total returns). The comparison stays fair — apples to apples.</li>
+      <li><strong>Unlisted shares / Gifted shares:</strong> Not factored in. If you received shares as a gift or hold unlisted shares, their value is not captured here.</li>
+      <li><strong>IPOs (via ASBA):</strong> Money goes from your bank directly — not through Zerodha. Use the "Add IPO" button above to include these. If the IPO was applied through Zerodha (not ASBA), it's already in your ledger.</li>
+      <li><strong>Buybacks:</strong> Proceeds go to your bank, shares leave your demat. Use "Add Buyback" above if not reflected in the ledger.</li>
+      <li><strong>Mutual Funds:</strong> Before April 2022, MF purchases via Zerodha Coin were deducted from your trading account and appear in the ledger. We auto-detect and flag these — you can exclude them above. After April 2022, MF purchases are no longer routed through Zerodha.</li>
+    </ul>
+  </div>
+
   <!-- STEP 2: Portfolio values -->
   <div class="input-section">
     <h2>2. Enter today's holdings value</h2>
@@ -266,22 +302,51 @@ function num(s) {
   return isNaN(n) ? 0 : n;
 }
 
+const MF_PATTERNS = [
+  /\bcoin\b/i, /\bmutual\s*fund/i, /\bMF\b/, /\bSIP\b/i,
+  /\bNippon\b/i, /\bHDFC\s*(AMC|Mutual|MF)/i, /\bSBI\s*(AMC|Mutual|MF)/i,
+  /\bICICI\s*Pru/i, /\bAxis\s*(AMC|Mutual|MF)/i, /\bKotak\s*(AMC|Mutual|MF)/i,
+  /\bUTI\s*(AMC|Mutual|MF)/i, /\bDSP\b/i, /\bMotilal/i, /\bMirae/i,
+  /\bAditya\s*Birla/i, /\bTata\s*(AMC|Mutual|MF)/i, /\bFranklin/i,
+  /\bParag\s*Parikh/i, /\bPPFAS/i, /\bQuant\s*(AMC|Mutual|MF)/i,
+  /\bEdelweiss/i, /\bInvesco/i, /\bSundaram/i, /\bCanara\s*Robeco/i,
+  /\bBandhan\s*(AMC|Mutual|MF)/i, /\bMahindra\s*Manulife/i,
+  /\bRedemption.*(?:fund|scheme|plan)/i, /\bPurchase.*(?:fund|scheme|plan)/i,
+  /\bNAV\b/i, /\bscheme\b/i, /\bfolio\b/i,
+];
+
+function isMFTransaction(particulars) {
+  if (!particulars) return false;
+  return MF_PATTERNS.some(p => p.test(particulars));
+}
+
 function extractCashFlows(rows) {
   const flows = [];
+  const mfEntries = [];
   for (const r of rows) {
     const vt = (r.voucher_type || "").trim();
     const dt = parseDate(r.posting_date);
     if (!dt) continue;
     const debit = num(r.debit);
     const credit = num(r.credit);
+    const particulars = (r.particulars || "").trim();
+    const isMF = isMFTransaction(particulars);
     if (vt === "Bank Receipts" || vt === "Bank Receipt") {
-      if (credit > 0) flows.push({ date: dt, amount: -credit, type: "deposit" });
+      if (credit > 0) {
+        const entry = { date: dt, amount: -credit, type: "deposit", particulars, isMF };
+        flows.push(entry);
+        if (isMF) mfEntries.push(entry);
+      }
     } else if (vt === "Bank Payments" || vt === "Bank Payment") {
-      if (debit > 0) flows.push({ date: dt, amount: debit, type: "withdrawal" });
+      if (debit > 0) {
+        const entry = { date: dt, amount: debit, type: "withdrawal", particulars, isMF };
+        flows.push(entry);
+        if (isMF) mfEntries.push(entry);
+      }
     }
   }
   flows.sort((a, b) => a.date - b.date);
-  return flows;
+  return { flows, mfEntries };
 }
 
 function extractClosingBalance(rows) {
@@ -410,11 +475,12 @@ function processFile(file) {
   reader.onload = () => {
     const text = reader.result;
     const rows = parseCSV(text);
-    const flows = extractCashFlows(rows);
+    const { flows, mfEntries } = extractCashFlows(rows);
     if (flows.length === 0) { showError(`No cash flows found in ${file.name}. Is this a Zerodha cash ledger?`); return; }
     const cashBalance = extractClosingBalance(rows);
-    uploadedFiles.push({ name: file.name, csvText: text, flows, cashBalance });
+    uploadedFiles.push({ name: file.name, csvText: text, flows, mfEntries, cashBalance, excludeMF: mfEntries.length > 0 });
     renderFileList();
+    renderMFSection();
     syncValueInputs();
     clearError();
     trackEvent('csv-uploaded');
@@ -425,6 +491,7 @@ function processFile(file) {
 function removeFile(idx) {
   uploadedFiles.splice(idx, 1);
   renderFileList();
+  renderMFSection();
   syncValueInputs();
 }
 
@@ -515,6 +582,80 @@ function getTotalValue() {
 
 function inr(n) { return n.toLocaleString("en-IN", { maximumFractionDigits: 0 }); }
 
+// ── MF exclusion ──
+
+function renderMFSection() {
+  const allMF = uploadedFiles.flatMap(f => f.excludeMF ? f.mfEntries : []);
+  const section = document.getElementById("mf-section");
+  if (uploadedFiles.some(f => f.mfEntries.length > 0)) {
+    section.style.display = "block";
+    const container = document.getElementById("mf-entries");
+    const allEntries = uploadedFiles.flatMap(f => f.mfEntries);
+    if (allEntries.length === 0) { container.innerHTML = ""; return; }
+    let html = '<table style="width:100%;border-collapse:collapse"><tr style="background:#f5f0d0"><th style="padding:4px 8px;text-align:left">Date</th><th style="padding:4px 8px;text-align:left">Particulars</th><th style="padding:4px 8px;text-align:right">Amount</th><th style="padding:4px 8px;text-align:left">Type</th></tr>';
+    for (const e of allEntries) {
+      html += `<tr style="border-top:1px solid #e8e0c0"><td style="padding:4px 8px">${fmt(e.date)}</td><td style="padding:4px 8px;max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${e.particulars}">${e.particulars}</td><td style="padding:4px 8px;text-align:right">₹${inr(Math.abs(e.amount))}</td><td style="padding:4px 8px">${e.type === 'deposit' ? 'Inflow' : 'Outflow'}</td></tr>`;
+    }
+    html += '</table>';
+    container.innerHTML = html;
+  } else {
+    section.style.display = "none";
+  }
+}
+
+function toggleMFExclusion() {
+  const exclude = document.getElementById("exclude-mf").checked;
+  uploadedFiles.forEach(f => { f.excludeMF = exclude; });
+}
+
+// ── Manual IPO / Buyback entries ──
+
+const manualEntries = [];
+
+function addManualEntry(type) {
+  manualEntries.push({ type, date: '', amount: '' });
+  renderManualEntries();
+  trackEvent('manual-' + type + '-added');
+}
+
+function removeManualEntry(idx) {
+  manualEntries.splice(idx, 1);
+  renderManualEntries();
+}
+
+function renderManualEntries() {
+  const el = document.getElementById("manual-entries");
+  if (manualEntries.length === 0) { el.innerHTML = ""; return; }
+  let html = "";
+  manualEntries.forEach((e, i) => {
+    const label = e.type === "ipo" ? "IPO (cash outflow)" : "Buyback (cash inflow)";
+    const color = e.type === "ipo" ? "#e3f2fd" : "#fce4ec";
+    html += `<div style="display:flex;align-items:center;gap:8px;padding:6px 8px;margin-bottom:4px;background:${color};border-radius:6px;font-size:.82rem">
+      <span style="min-width:120px;font-weight:500">${label}</span>
+      <input type="date" value="${e.date}" onchange="manualEntries[${i}].date=this.value" style="padding:4px;border:1px solid #ccc;border-radius:4px;font-size:.8rem">
+      <span>₹</span>
+      <input type="number" value="${e.amount}" placeholder="Amount" min="0" onchange="manualEntries[${i}].amount=this.value" style="width:120px;padding:4px;border:1px solid #ccc;border-radius:4px;font-size:.8rem">
+      <button onclick="removeManualEntry(${i})" style="background:none;border:none;cursor:pointer;color:#999;font-size:1rem" title="Remove">✕</button>
+    </div>`;
+  });
+  el.innerHTML = html;
+}
+
+function getManualFlows() {
+  const flows = [];
+  for (const e of manualEntries) {
+    const dt = parseDate(e.date);
+    const amt = parseFloat(e.amount);
+    if (!dt || !amt || amt <= 0) continue;
+    if (e.type === "ipo") {
+      flows.push({ date: dt, amount: -amt, type: "deposit" });
+    } else {
+      flows.push({ date: dt, amount: amt, type: "withdrawal" });
+    }
+  }
+  return flows;
+}
+
 // ── Main compute ──
 
 async function compute() {
@@ -523,7 +664,12 @@ async function compute() {
   const av = getTotalValue();
   if (av <= 0) { showError("Please enter your current portfolio value."); return; }
 
-  const allFlows = uploadedFiles.flatMap(f => f.flows).sort((a, b) => a.date - b.date);
+  const csvFlows = uploadedFiles.flatMap(f => {
+    if (f.excludeMF && f.mfEntries.length > 0) return f.flows.filter(fl => !fl.isMF);
+    return f.flows;
+  });
+  const manualFlows = getManualFlows();
+  const allFlows = [...csvFlows, ...manualFlows].sort((a, b) => a.date - b.date);
   const xirrFlows = [...allFlows, { date: new Date(), amount: av }];
   userXIRR = computeXIRR(xirrFlows);
   if (userXIRR === null) { showError("Could not compute XIRR. Ensure you have deposits and a positive portfolio value."); return; }
