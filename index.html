@@ -75,6 +75,9 @@ font-size:.9rem;text-align:right;width:100%}
 border:1px solid #ddd;border-radius:6px;background:#fff;color:#333;font-size:.82rem;
 font-weight:500;cursor:pointer;transition:all .15s}
 .btn-dl:hover{border-color:#4361ee;color:#4361ee;background:#f0f4ff}
+.calc-link{font-size:.75rem;color:#4361ee;cursor:pointer;text-decoration:underline;
+text-underline-offset:2px;border:none;background:none;padding:0}
+.calc-link:hover{color:#3a56d4}
 
 .privacy{text-align:center;color:#999;font-size:.75rem;margin-top:2rem;padding-top:1rem;
 border-top:1px solid #eee}
@@ -97,6 +100,17 @@ font-size:.875rem;margin-bottom:1rem;display:none}
 <div class="container">
   <h1>Zerodha XIRR vs Index Benchmark</h1>
   <p class="tagline">How did your portfolio do compared to just buying the index?</p>
+
+  <div class="input-section" style="background:#f8f9ff;border:1px solid #e0e4f0">
+    <h2 style="margin-bottom:.5rem">How to use</h2>
+    <ol style="font-size:.85rem;color:#555;padding-left:1.25rem;margin:0">
+      <li><strong>Download your cash ledger:</strong> Log in to <a href="https://kite.zerodha.com" target="_blank" style="color:#4361ee">Kite</a> → Click <strong>Console</strong> (top-right) → <strong>Account</strong> → <strong>Ledger</strong> → Set date range (start from account opening) → Click <strong>CSV</strong> to download</li>
+      <li><strong>Upload the CSV(s)</strong> below. If you have multiple Zerodha accounts, upload each ledger separately</li>
+      <li><strong>Enter your holdings value</strong> — the current market value shown on your Kite dashboard</li>
+      <li>Click <strong>Calculate XIRR</strong> to see how you did vs major indices</li>
+    </ol>
+  </div>
+
   <div id="freshness" class="freshness"></div>
 
   <!-- STEP 1: Upload CSVs -->
@@ -105,7 +119,7 @@ font-size:.875rem;margin-bottom:1rem;display:none}
     <div class="file-drop" id="file-drop">
       <div class="icon">📂</div>
       <div class="label">Click or drag <strong>ledger CSV file(s)</strong> here</div>
-      <div style="font-size:.75rem;color:#999;margin-top:.25rem">Kite → Console → Reports → Ledger → Download CSV</div>
+      <div style="font-size:.75rem;color:#999;margin-top:.25rem">Downloaded from Kite Console → Account → Ledger → CSV</div>
       <input type="file" id="file-input" accept=".csv" multiple>
     </div>
     <div class="file-list" id="file-list"></div>
@@ -115,7 +129,7 @@ font-size:.875rem;margin-bottom:1rem;display:none}
   <!-- STEP 2: Portfolio values -->
   <div class="input-section">
     <h2>2. Enter today's holdings value</h2>
-    <p class="hint" style="margin-bottom:.75rem">Enter the current market value of your stock holdings for each account. Cash balance is auto-read from the ledger CSV.</p>
+    <p class="hint" style="margin-bottom:.75rem">Enter the <strong>closing market value</strong> of your stock/MF holdings from Kite (Portfolio → Holdings → Total value). If you have intraday or recent buy orders that haven't settled yet and aren't reflected in your holdings, add that amount too. Cash balance is auto-read from the ledger CSV.</p>
     <div class="value-section" id="value-section">
       <div class="value-row">
         <label>Holdings ₹</label>
@@ -144,7 +158,7 @@ font-size:.875rem;margin-bottom:1rem;display:none}
     <div class="result-block">
       <h2>If you had invested in an index instead</h2>
       <table class="compare-table">
-        <thead><tr><th>Index</th><th>XIRR</th><th>vs You</th></tr></thead>
+        <thead><tr><th>Index</th><th>XIRR</th><th>vs You</th><th></th></tr></thead>
         <tbody id="compare-body"></tbody>
       </table>
     </div>
@@ -176,6 +190,8 @@ let indexMeta = null;
 let indexData = {};
 let userXIRR = null;
 let benchmarkXIRRs = {};
+let benchmarkDetails = {};
+let userXIRRFlows = [];
 
 const INDEX_DISPLAY = {
   nifty50: "Nifty 50", sensex: "Sensex", nifty500: "Nifty 500",
@@ -330,31 +346,39 @@ function fmt(d) {
   return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0");
 }
 
-function benchmarkXIRRCalc(userFlows, prices, latestClose) {
+function benchmarkXIRRCalc(userFlows, prices, latestClose, detailKey) {
   const bFlows = [];
+  const steps = [];
   let units = 0;
   for (const f of userFlows) {
     const p = findPrice(prices, f.date);
     if (!p) continue;
     if (f.amount < 0) {
-      units += (-f.amount) / p.close;
+      const unitsBought = (-f.amount) / p.close;
+      units += unitsBought;
       bFlows.push({ date: f.date, amount: f.amount });
+      steps.push({ date: fmt(f.date), action: "Buy", indexPrice: p.close, amount: -f.amount, unitsDelta: unitsBought, unitsAfter: units, cashFlow: f.amount });
     } else {
       const unitsToSell = f.amount / p.close;
       if (unitsToSell <= units) {
         units -= unitsToSell;
         bFlows.push({ date: f.date, amount: f.amount });
+        steps.push({ date: fmt(f.date), action: "Sell", indexPrice: p.close, amount: f.amount, unitsDelta: -unitsToSell, unitsAfter: units, cashFlow: f.amount });
       } else if (units > 0) {
         const actualProceeds = units * p.close;
+        steps.push({ date: fmt(f.date), action: "Sell (partial)", indexPrice: p.close, amount: actualProceeds, unitsDelta: -units, unitsAfter: 0, cashFlow: actualProceeds });
         units = 0;
         bFlows.push({ date: f.date, amount: actualProceeds });
       }
     }
   }
   const tv = units * latestClose;
-  if (tv <= 0) return null;
+  if (tv <= 0) return { xirr: null, steps };
   bFlows.push({ date: new Date(), amount: tv });
-  return computeXIRR(bFlows);
+  steps.push({ date: fmt(new Date()), action: "Terminal value", indexPrice: latestClose, amount: tv, unitsDelta: 0, unitsAfter: units, cashFlow: tv });
+  const xirr = computeXIRR(bFlows);
+  if (detailKey) benchmarkDetails[detailKey] = steps;
+  return { xirr, steps };
 }
 
 // ── File handling (multiple) ──
@@ -497,6 +521,8 @@ async function compute() {
   userXIRR = computeXIRR(xirrFlows);
   if (userXIRR === null) { showError("Could not compute XIRR. Ensure you have deposits and a positive portfolio value."); return; }
 
+  userXIRRFlows = xirrFlows;
+
   const pct = (userXIRR * 100).toFixed(2);
   const el = document.getElementById("my-xirr");
   el.textContent = pct + "%";
@@ -504,32 +530,36 @@ async function compute() {
   const totalIn = allFlows.filter(f => f.type === "deposit").reduce((s, f) => s + Math.abs(f.amount), 0);
   const totalOut = allFlows.filter(f => f.type === "withdrawal").reduce((s, f) => s + f.amount, 0);
   const acctLabel = uploadedFiles.length > 1 ? ` across ${uploadedFiles.length} accounts` : "";
-  document.getElementById("my-xirr-sub").textContent =
-    `Invested ₹${inr(totalIn)} · Withdrew ₹${inr(totalOut)} · Current value ₹${inr(av)}${acctLabel}`;
+  document.getElementById("my-xirr-sub").innerHTML =
+    `Invested ₹${inr(totalIn)} · Withdrew ₹${inr(totalOut)} · Current value ₹${inr(av)}${acctLabel}` +
+    ` &nbsp;<button class="calc-link" onclick="downloadUserXIRR()">See calculation</button>`;
 
   if (!indexMeta) await loadMeta();
   const tbody = document.getElementById("compare-body");
   tbody.innerHTML = "";
   benchmarkXIRRs = {};
+  benchmarkDetails = {};
 
   const okKeys = indexMeta ? Object.keys(indexMeta.indices).filter(k => indexMeta.indices[k].status === "ok") : [];
   for (const key of okKeys) {
     const prices = await loadIndex(key);
     if (!prices) { benchmarkXIRRs[key] = null; continue; }
-    benchmarkXIRRs[key] = benchmarkXIRRCalc(allFlows, prices, prices[prices.length - 1].close);
+    const result = benchmarkXIRRCalc(allFlows, prices, prices[prices.length - 1].close, key);
+    benchmarkXIRRs[key] = result.xirr;
   }
 
   for (const key of okKeys) {
     const tr = document.createElement("tr");
     const bx = benchmarkXIRRs[key];
     if (bx === null) {
-      tr.innerHTML = `<td>${INDEX_DISPLAY[key] || key}</td><td style="color:#999">N/A</td><td></td>`;
+      tr.innerHTML = `<td>${INDEX_DISPLAY[key] || key}</td><td style="color:#999">N/A</td><td></td><td></td>`;
     } else {
       const bPct = (bx * 100).toFixed(2);
       const delta = ((userXIRR - bx) * 100).toFixed(2);
       const won = delta >= 0;
       tr.innerHTML = `<td>${INDEX_DISPLAY[key] || key}</td><td>${bPct}%</td>` +
-        `<td><span class="tag ${won?"tag-green":"tag-red"}">${won?"+":""}${delta} pp</span></td>`;
+        `<td><span class="tag ${won?"tag-green":"tag-red"}">${won?"+":""}${delta} pp</span></td>` +
+        `<td><button class="calc-link" onclick="downloadBenchmarkCalc('${key}')">See calculation</button></td>`;
     }
     tbody.appendChild(tr);
   }
@@ -577,8 +607,11 @@ function updateBasket() {
   const bPct = (blended * 100).toFixed(2);
   const delta = ((userXIRR - blended) * 100).toFixed(2);
   const won = delta >= 0;
+  const weightMap = {};
+  inputs.forEach(inp => { const w = parseFloat(inp.value) || 0; if (w > 0) weightMap[inp.dataset.key] = w; });
   el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center">` +
-    `<div><strong>Blended Index XIRR:</strong> <span style="font-size:1.2rem;font-weight:700">${bPct}%</span></div>` +
+    `<div><strong>Blended Index XIRR:</strong> <span style="font-size:1.2rem;font-weight:700">${bPct}%</span>` +
+    ` <button class="calc-link" onclick='downloadBlendedCalc(${JSON.stringify(weightMap).replace(/'/g,"&#39;")})'>See calculation</button></div>` +
     `<div><span class="tag ${won?"tag-green":"tag-red"}">${won?"+":""}${delta} pp</span></div></div>` +
     `<div style="font-size:.8rem;color:#888;margin-top:.25rem">You ${won?"beat":"trailed"} this blend by ${Math.abs(delta)} percentage points</div>`;
 }
@@ -609,6 +642,69 @@ function downloadIndexCSV(key) {
   a.download = key + "_prices.csv";
   a.click();
   URL.revokeObjectURL(url);
+}
+
+// ── Calculation downloads ──
+
+function dlCSV(content, filename) {
+  const blob = new Blob([content], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a"); a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
+function downloadUserXIRR() {
+  if (!userXIRRFlows || userXIRRFlows.length === 0) return;
+  let csv = "Date,Type,Amount (₹),Cash Flow for XIRR\n";
+  for (const f of userXIRRFlows) {
+    const d = fmt(f.date);
+    const isTerminal = f === userXIRRFlows[userXIRRFlows.length - 1];
+    const type = isTerminal ? "Terminal value (holdings)" : (f.amount < 0 ? "Deposit" : "Withdrawal");
+    csv += `${d},${type},${Math.abs(f.amount).toFixed(2)},${f.amount.toFixed(2)}\n`;
+  }
+  csv += `\nXIRR,${(userXIRR * 100).toFixed(4)}%\n`;
+  csv += `\nNote: Negative cash flows = money going IN (deposits). Positive = money coming OUT (withdrawals/terminal value).\n`;
+  csv += `XIRR is the annualised rate that makes NPV of all cash flows = 0.\n`;
+  dlCSV(csv, "my_xirr_calculation.csv");
+}
+
+function downloadBenchmarkCalc(key) {
+  const steps = benchmarkDetails[key];
+  if (!steps || steps.length === 0) return;
+  let csv = `Benchmark: ${INDEX_DISPLAY[key] || key}\n\n`;
+  csv += "Date,Action,Index Price,Amount (₹),Units +/-,Cumulative Units,Cash Flow for XIRR\n";
+  for (const s of steps) {
+    csv += `${s.date},${s.action},${s.indexPrice.toFixed(2)},${s.amount.toFixed(2)},${s.unitsDelta >= 0 ? "+" : ""}${s.unitsDelta.toFixed(4)},${s.unitsAfter.toFixed(4)},${s.cashFlow.toFixed(2)}\n`;
+  }
+  const bx = benchmarkXIRRs[key];
+  csv += `\nBenchmark XIRR,${bx !== null ? (bx * 100).toFixed(4) + "%" : "N/A"}\n`;
+  csv += `\nHow it works:\n`;
+  csv += `- Each deposit buys index units at that day's price (units = amount / price)\n`;
+  csv += `- Each withdrawal sells units at that day's price (units = amount / price)\n`;
+  csv += `- Terminal value = remaining units × latest index price\n`;
+  csv += `- XIRR is computed on the resulting cash flows\n`;
+  dlCSV(csv, `${key}_xirr_calculation.csv`);
+}
+
+function downloadBlendedCalc(weightMap) {
+  let csv = "Blended XIRR Calculation\n\n";
+  csv += "Index,Weight,XIRR,Weighted Contribution\n";
+  let totalW = 0;
+  for (const key of Object.keys(weightMap)) totalW += weightMap[key];
+  let blended = 0;
+  for (const [key, w] of Object.entries(weightMap)) {
+    const bx = benchmarkXIRRs[key];
+    if (bx === null) { csv += `${INDEX_DISPLAY[key] || key},${w},N/A,—\n`; continue; }
+    const normW = w / totalW;
+    const contrib = normW * bx;
+    blended += contrib;
+    csv += `${INDEX_DISPLAY[key] || key},${w} (${(normW * 100).toFixed(1)}%),${(bx * 100).toFixed(4)}%,${(contrib * 100).toFixed(4)}%\n`;
+  }
+  csv += `\nBlended XIRR,${(blended * 100).toFixed(4)}%\n`;
+  csv += `Your XIRR,${(userXIRR * 100).toFixed(4)}%\n`;
+  csv += `Difference,${((userXIRR - blended) * 100).toFixed(2)} pp\n`;
+  csv += `\nBlended XIRR = weighted average of individual index XIRRs using the weights above.\n`;
+  dlCSV(csv, "blended_xirr_calculation.csv");
 }
 
 // ── Helpers ──
