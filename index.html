@@ -333,23 +333,25 @@ function fmt(d) {
 function benchmarkXIRRCalc(userFlows, prices, latestClose) {
   const bFlows = [];
   let units = 0;
-  const STT = 0.001; // 0.1% each side
   for (const f of userFlows) {
     const p = findPrice(prices, f.date);
     if (!p) continue;
     if (f.amount < 0) {
-      const investable = (-f.amount) * (1 - STT);
-      units += investable / p.close;
+      units += (-f.amount) / p.close;
       bFlows.push({ date: f.date, amount: f.amount });
     } else {
-      if (units > 0) {
-        const unitsToSell = f.amount / (p.close * (1 - STT));
-        units = Math.max(0, units - unitsToSell);
+      const unitsToSell = f.amount / p.close;
+      if (unitsToSell <= units) {
+        units -= unitsToSell;
         bFlows.push({ date: f.date, amount: f.amount });
+      } else if (units > 0) {
+        const actualProceeds = units * p.close;
+        units = 0;
+        bFlows.push({ date: f.date, amount: actualProceeds });
       }
     }
   }
-  const tv = units * latestClose * (1 - STT);
+  const tv = units * latestClose;
   if (tv <= 0) return null;
   bFlows.push({ date: new Date(), amount: tv });
   return computeXIRR(bFlows);
