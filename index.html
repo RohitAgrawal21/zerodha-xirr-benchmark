@@ -415,6 +415,7 @@ function processFile(file) {
     renderFileList();
     syncValueInputs();
     clearError();
+    trackEvent('csv-uploaded');
   };
   reader.readAsText(file);
 }
@@ -570,6 +571,7 @@ async function compute() {
 
   renderBasketInputs(okKeys);
   renderDownloadButtons(okKeys);
+  trackEvent('xirr-calculated');
   document.getElementById("results").style.display = "block";
   document.getElementById("results").scrollIntoView({ behavior: "smooth" });
 }
@@ -607,6 +609,7 @@ function updateBasket() {
   });
   const el = document.getElementById("basket-result");
   if (totalW === 0) { el.innerHTML = '<span style="color:#999">Enter at least one weight above 0.</span>'; return; }
+  trackEvent('blended-xirr-used');
   blended /= totalW;
   const bPct = (blended * 100).toFixed(2);
   const delta = ((userXIRR - blended) * 100).toFixed(2);
@@ -635,6 +638,7 @@ function renderDownloadButtons(keys) {
 }
 
 function downloadIndexCSV(key) {
+  trackEvent('download-index-' + key);
   const prices = indexData[key];
   if (!prices || prices.length === 0) return;
   let csv = "date,close\n";
@@ -658,6 +662,7 @@ function dlCSV(content, filename) {
 }
 
 function downloadUserXIRR() {
+  trackEvent('download-calc-user');
   if (!userXIRRFlows || userXIRRFlows.length === 0) return;
   let csv = "Date,Type,Amount (₹),Cash Flow for XIRR\n";
   for (const f of userXIRRFlows) {
@@ -673,6 +678,7 @@ function downloadUserXIRR() {
 }
 
 function downloadBenchmarkCalc(key) {
+  trackEvent('download-calc-' + key);
   const steps = benchmarkDetails[key];
   if (!steps || steps.length === 0) return;
   let csv = `Benchmark: ${INDEX_DISPLAY[key] || key}\n\n`;
@@ -691,6 +697,7 @@ function downloadBenchmarkCalc(key) {
 }
 
 function downloadBlendedCalc(weightMap) {
+  trackEvent('download-calc-blended');
   let csv = "Blended XIRR Calculation\n\n";
   csv += "Index,Weight,XIRR,Weighted Contribution\n";
   let totalW = 0;
@@ -738,5 +745,10 @@ function clearError() { document.getElementById("error-msg").style.display = "no
 loadMeta();
 </script>
 <script data-goatcounter="https://zerodha-xirr.goatcounter.com/count" async src="//gc.zgo.at/count.js"></script>
+<script>
+function trackEvent(name) {
+  if (window.goatcounter && goatcounter.count) goatcounter.count({ path: 'event-' + name, title: name, event: true });
+}
+</script>
 </body>
 </html>
