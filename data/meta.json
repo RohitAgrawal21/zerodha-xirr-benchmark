@@ -1,6 +1,6 @@
 {
-  "updated": "2026-06-24T18:22:59Z",
-  "updatedISO8601": "2026-06-24T18:22:59Z",
+  "updated": "2026-06-25T19:23:37Z",
+  "updatedISO8601": "2026-06-25T19:23:37Z",
   "indices": {
     "nifty50": {
       "status": "ok",
@@ -41,8 +41,8 @@
     "smallcap": {
       "status": "ok",
       "source": "mfapi",
-      "latestDate": "2026-06-23",
-      "latestClose": 216.3
+      "latestDate": "2026-06-24",
+      "latestClose": 216.824
     }
   }
 }
