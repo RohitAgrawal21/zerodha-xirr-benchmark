@@ -1,12 +1,12 @@
 {
-  "updated": "2026-06-26T18:13:52Z",
-  "updatedISO8601": "2026-06-26T18:13:52Z",
+  "updated": "2026-06-27T15:56:10Z",
+  "updatedISO8601": "2026-06-27T15:56:10Z",
   "indices": {
     "nifty50": {
       "status": "ok",
       "source": "yfinance",
-      "latestDate": "2026-06-24",
-      "latestClose": 24021.65
+      "latestDate": "2026-06-25",
+      "latestClose": 24056.0
     },
     "sensex": {
       "status": "ok",
