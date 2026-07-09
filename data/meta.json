@@ -1,12 +1,12 @@
 {
-  "updated": "2026-07-08T17:13:08Z",
-  "updatedISO8601": "2026-07-08T17:13:08Z",
+  "updated": "2026-07-09T18:30:12Z",
+  "updatedISO8601": "2026-07-09T18:30:12Z",
   "indices": {
     "nifty50": {
       "status": "ok",
       "source": "yfinance",
-      "latestDate": "2026-07-06",
-      "latestClose": 24430.35
+      "latestDate": "2026-07-08",
+      "latestClose": 23882.05
     },
     "sensex": {
       "status": "ok",
@@ -41,8 +41,8 @@
     "smallcap": {
       "status": "ok",
       "source": "mfapi",
-      "latestDate": "2026-07-07",
-      "latestClose": 219.335
+      "latestDate": "2026-07-08",
+      "latestClose": 217.085
     }
   }
 }
