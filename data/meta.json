@@ -1,48 +1,48 @@
 {
-  "updated": "2026-07-13T18:19:51Z",
-  "updatedISO8601": "2026-07-13T18:19:51Z",
+  "updated": "2026-07-14T14:02:44Z",
+  "updatedISO8601": "2026-07-14T14:02:44Z",
   "indices": {
     "nifty50": {
       "status": "ok",
       "source": "yfinance",
-      "latestDate": "2026-07-13",
-      "latestClose": 24211.0
+      "latestDate": "2026-07-14",
+      "latestClose": 24052.05
     },
     "sensex": {
       "status": "ok",
       "source": "yfinance",
-      "latestDate": "2026-07-13",
-      "latestClose": 77616.4
+      "latestDate": "2026-07-14",
+      "latestClose": 77054.94
     },
     "nifty500": {
       "status": "ok",
       "source": "yfinance",
-      "latestDate": "2026-07-13",
-      "latestClose": 23347.05
+      "latestDate": "2026-07-14",
+      "latestClose": 23199.45
     },
     "nifty_midcap100": {
       "status": "ok",
       "source": "yfinance",
-      "latestDate": "2026-07-13",
-      "latestClose": 63040.95
+      "latestDate": "2026-07-14",
+      "latestClose": 62766.4
     },
     "nifty_next50": {
       "status": "ok",
       "source": "yfinance",
-      "latestDate": "2026-07-13",
-      "latestClose": 779.19
+      "latestDate": "2026-07-14",
+      "latestClose": 776.39
     },
     "gold": {
       "status": "ok",
       "source": "yfinance",
-      "latestDate": "2026-07-13",
-      "latestClose": 116.95
+      "latestDate": "2026-07-14",
+      "latestClose": 115.98
     },
     "smallcap": {
       "status": "ok",
       "source": "mfapi",
-      "latestDate": "2026-07-10",
-      "latestClose": 222.601
+      "latestDate": "2026-07-13",
+      "latestClose": 222.995
     }
   }
 }
