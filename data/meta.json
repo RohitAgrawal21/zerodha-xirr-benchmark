@@ -1,6 +1,6 @@
 {
-  "updated": "2026-10-02T17:46:22Z",
-  "updatedISO8601": "2026-10-02T17:46:22Z",
+  "updated": "2026-10-03T16:05:55Z",
+  "updatedISO8601": "2026-10-03T16:05:55Z",
   "indices": {
     "nifty50": {
       "status": "ok",
@@ -29,13 +29,13 @@
     "nifty_next50": {
       "status": "ok",
       "source": "yfinance",
-      "latestDate": "2026-10-01",
+      "latestDate": "2026-10-02",
       "latestClose": 747.52
     },
     "gold": {
       "status": "ok",
       "source": "yfinance",
-      "latestDate": "2026-10-01",
+      "latestDate": "2026-10-02",
       "latestClose": 121.43
     },
     "smallcap": {
