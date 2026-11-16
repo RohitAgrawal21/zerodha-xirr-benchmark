@@ -1,6 +1,6 @@
 {
-  "updated": "2026-11-15T18:43:19Z",
-  "updatedISO8601": "2026-11-15T18:43:19Z",
+  "updated": "2026-11-16T21:53:37Z",
+  "updatedISO8601": "2026-11-16T21:53:37Z",
   "indices": {
     "nifty50": {
       "status": "ok",
@@ -23,8 +23,8 @@
     "nifty_midcap100": {
       "status": "ok",
       "source": "yfinance",
-      "latestDate": "2026-11-13",
-      "latestClose": 61889.5
+      "latestDate": "2026-11-16",
+      "latestClose": 61576.4
     },
     "nifty_next50": {
       "status": "ok",
